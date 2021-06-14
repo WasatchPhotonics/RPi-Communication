@@ -15,6 +15,50 @@ from wasatch import applog
 #                                Characteristics                               #
 #                                                                              #
 ################################################################################
+class EEPROM_Cmd(Characteristic):
+    def __init__(self,uuid):
+        Characteristic.__init__(self, {'uuid': uuid, 'properties': [ 'write'], 'value': None})
+        self._value = array.array('B', [0] * 0)
+        self.page = None
+        self.subpage = None
+
+    def onWriteRequest(self, data, offset, withoutResponse, callback):
+        # data comes in as a byte array so it is easy to manipulate
+        page = int(data[0])
+        subpage = int(data[1])
+        self.page = page
+        self.subpage = subpage
+        print(f"After masking the values for page and subpage are, {page}, {subpage}")
+        callback(Characteristic.RESULT_SUCCESS)
+
+    def get_page(self):
+        return self.page
+
+    def get_subpage(self):
+        return self.subpage
+
+class EEPROM_Data(Characteristic):
+    def __init__(self,uuid,cmd_status):
+        Characteristic.__init__(self, {'uuid': uuid, 'properties': ['read', 'notify'], 'value': None})
+        self.eeprom_cmd = cmd_status
+        device.settings.eeprom.generate_write_buffers()
+        self._value = array.array('B', [0] * 0)
+        self._updateValueCallback = None
+
+    def onReadRequest(self, offset, callback):
+        print("Attempted EEPROM read")
+        page = self.eeprom_cmd.get_page()
+        subpage = self.eeprom_cmd.get_subpage()
+        print(f"Pages are currently {page}, {subpage}")
+        print(f"EEPROM data is {device.settings.eeprom.write_buffers[page]}")
+        self._value = bytearray(device.settings.eeprom.write_buffers[page])[(0+16*subpage):(16+16*subpage)]
+        print(f"Length of the sending data is {len(self._value)}")
+        callback(Characteristic.RESULT_SUCCESS, self._value)
+
+    def onSubscribe(self, maxValueSize, updateValueCallback):
+        print('EEPROM Data subscribed to.')
+        slef._updateValueCallback = updateValueCallback
+
 
 class IntegrationTime(Characteristic):
     def __init__(self, uuid):

@@ -26,6 +26,7 @@ class BLE_Communicator:
                 print(error)
             else:
                 print("Configuring bleno services")
+                eeprom_cmd = EEPROM_Cmd(self.make_guid("ff07"))
                 self.bleno.setServices([
                     BlenoPrimaryService({
                         "uuid":self.make_guid("ff00"),
@@ -33,7 +34,9 @@ class BLE_Communicator:
                             IntegrationTime (self.make_guid("ff01")), 
                             Scans_to_average(self.make_guid("20b4")), 
                             Laser_enable    (self.make_guid("7610")), 
-                            Read_Spectrum   (self.make_guid("ff06"))
+                            Read_Spectrum   (self.make_guid("ff06")),
+                            eeprom_cmd,
+                            EEPROM_Data     (self.make_guid("ff08"),eeprom_cmd)
                         ]
                     })
                 ])
