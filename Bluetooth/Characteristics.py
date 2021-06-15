@@ -1,7 +1,9 @@
 import sys
 import json
 import array
+import struct
 import logging
+import numpy as np
 
 from pybleno import *
 
@@ -25,11 +27,50 @@ class Battery_Status(Characteristic):
         self.subpage = None 
 
     def onReadRequest(self, offset, callback):
-        logging.debug("Bluetooth: batter query received")
+        logger.debug("Bluetooth: batter query received")
         if device.settings.eeprom.has_battery:
-            callback(Characteristic.RESULT_SUCCESS, bytes(device.hardware.get_battery_percentage()))
+            logger.debug("Bluetooth: Device has batter getting state.")
+            dev_battery = device.hardware.get_battery_percentage() 
+            callback(Characteristic.RESULT_SUCCESS, dev_battery.to_bytes(2,"big"))
         else:
-            callback(Characteristic.RESULT_SUCCESS,bytes(100))
+            logger.debug("Bluetooth: Device does not have battery. Sending 100%")
+            full_battery = 100
+            callback(Characteristic.RESULT_SUCCESS,full_battery.to_bytes(2,"big"))
+
+class Acquire_Spectrum(Characteristic):
+    def __init__(self,uuid):
+        Characteristic.__init__(self, {'uuid': uuid, 'properties': ['write'], 'value': None})
+        self._value = array.array('B',[0] * 0)
+        self.current_spec = None
+
+    def onWriteRequest(self,data,offset,withoutResponse,callback):
+        logger.debug("Bluetooth: Received command to acquire spectrum")
+        self.current_spec = device.take_one_averaged_reading()
+        callback(Characteristic.RESULT_SUCCESS)
+
+    def get_current_spectra(self):
+        return self.current_spec
+
+    def reset_current_spectra(self):
+        self.current_spec = None
+
+class Spectrum_Request(Characteristic):
+    def __init__(self,uuid):
+        Characteristic.__init__(self, {'uuid': uuid, 'properties': [ 'write'], 'value': None})
+        self._value = array.array('B',[0] * 0)
+        self.pixel_offset = None
+
+    def onWriteRequest(self, data, offset, withoutResponse, callback):
+        pixel_start_value = int.from_bytes(data, "big")
+        logger.debug(f"Bluetooth: Received request to set pixel offset for spectra {pixel_start_value}")
+        self.pixel_offset = pixel_start_value
+        callback(Characteristic.RESULT_SUCCESS)
+
+    def get_current_offset(self):
+        return self.pixel_offset
+
+    def reset_current_offset(self):
+        self.pixel_offset = None
 
 
 class EEPROM_Cmd(Characteristic):
@@ -45,7 +86,6 @@ class EEPROM_Cmd(Characteristic):
         subpage = int(data[1])
         self.page = page
         self.subpage = subpage
-        (f"After masking the values for page and subpage are, {page}, {subpage}")
         callback(Characteristic.RESULT_SUCCESS)
 
     def get_page(self):
@@ -63,17 +103,14 @@ class EEPROM_Data(Characteristic):
         self._updateValueCallback = None
 
     def onReadRequest(self, offset, callback):
-        logging.debug("Attempted EEPROM read")
+        logger.debug("Bluetooth: Attempted EEPROM read")
         page = self.eeprom_cmd.get_page()
         subpage = self.eeprom_cmd.get_subpage()
-        logging.debug(f"Pages are currently {page}, {subpage}")
-        logging.debug(f"EEPROM data is {device.settings.eeprom.write_buffers[page]}")
         self._value = bytearray(device.settings.eeprom.write_buffers[page])[(0+16*subpage):(16+16*subpage)]
-        logging.debug(f"Length of the sending data is {len(self._value)}")
         callback(Characteristic.RESULT_SUCCESS, self._value)
 
     def onSubscribe(self, maxValueSize, updateValueCallback):
-        logging.debug('EEPROM Data subscribed to.')
+        logger.debug('Bluetooth: EEPROM Data subscribed to.')
         slef._updateValueCallback = updateValueCallback
 
 
@@ -84,23 +121,23 @@ class IntegrationTime(Characteristic):
         self._updateValueCallback = None
         
     def onReadRequest(self, offset, callback):
-        #logging.debug(offset, callback, self._value)
+        #logger.debug(offset, callback, self._value)
         callback(Characteristic.RESULT_SUCCESS, self._value)
         
     def onWriteRequest(self, data, offset, withoutResponse, callback):
-        self._value = data
-        device.change_setting("integration_time_ms", data)
-        logging.debug("Integration time changed to %d ms" % int.from_bytes(data,"big"))
+        self._value = int.from_bytes(data,"big")
+        device.change_setting("integration_time_ms", self._value)
+        logger.debug("Integration time changed to %d ms" % self._value)
         if self._updateValueCallback:
             self._updateValueCallback(self._value)
         callback(Characteristic.RESULT_SUCCESS)
     
     def onSubscribe(self, maxValueSize, updateValueCallback):
-        logging.debug("onSubscribe")
+        logger.debug("onSubscribe")
         self._updateValueCallback = updatevalueCallback
         
     def onUnsubscribe(self):
-        logging.debug("on unsubscribe")
+        logger.debug("on unsubscribe")
         self._updateValueCallback = None
             
 class Scans_to_average(Characteristic):
@@ -110,45 +147,77 @@ class Scans_to_average(Characteristic):
         self._updateValueCallback = None
         
     def onReadRequest(self, offset, callback):
-        logging.debug()
+        logger.debug()
         callback(Characteristic.RESULT_SUCCESS, self._value)
     
     def onWriteRequest(self, data, offset, withoutResponse, callback):
         self._value = data
         device.change_setting("scans_to_average", data)
-        logging.debug("Scans average changed to %d" %int(data))
+        logger.debug("Scans average changed to %d" %int(data))
         if self._updateValueCallback:
             self._updateValueCallback(self._value)
         callback(Characteristic.RESULT_SUCCESS)
 
     def onSubscribe(self, maxValueSize, updateValueCallback):
-        logging.debug("onSubscribe")
+        logger.debug("onSubscribe")
         self._updateValueCallback = updatevalueCallback
         
     def onUnsubscribe(self):
-        logging.debug("on unsubscribe")
+        logger.debug("on unsubscribe")
         self._updateValueCallback = None
                   
 class Read_Spectrum(Characteristic):
-    def __init__(self, uuid):
+    def __init__(self, uuid, spec_acquire, spec_cmd):
         Characteristic.__init__(self, {'uuid': uuid, 'properties': ['read'], 'value': None})
         self._value = array.array('B', [0] * 0)
         self._updateValueCallback = None
+        self.spec_acquire = spec_acquire
+        self.spec_cmd = spec_cmd
         
     def onReadRequest(self, offset, callback):
-        #logging.debug(self._value, self.value, callback, offset)
-        reading = device.acquire_data()
-        logging.debug(sys.getsizeof(json.dumps(reading.spectrum)))
-        self._value = bytearray(b'768')
-        callback(Characteristic.RESULT_SUCCESS, array.array('B', readin))
+        #logger.debug(self._value, self.value, callback, offset)
+        logger.debug("Bluetooth: Received request to return spectrum that has been taken.")
+        spec_read = self.spec_acquire.get_current_spectra()
+        pixel_offset = self.spec_cmd.get_current_offset()
+        reading = spec_read.spectrum
+        logger.debug(f"Creating return bytes from reading. Starting at pixel {offset}")
+        return_bytes = bytes()
+        while len(return_bytes) < 20  and offset < len(reading):
+            pixel_byte_value = reading[pixel_offset].to_bytes(2,"little")
+            return_bytes += pixel_byte_value
+            offset += 1
+        return_bytes = pixel_offset.to_bytes(2,"big") + return_bytes
+        logger.debug(f"Finished building return bytes of length {len(return_bytes)} containing up to pixel {pixel_offset} and data offset is {offset}")
+        callback(Characteristic.RESULT_SUCCESS, return_bytes)
 
     def onSubscribe(self, maxValueSize, updateValueCallback):
-        logging.debug("onSubscribe")
+        logger.debug("onSubscribe")
         self._updateValueCallback = updatevalueCallback
         
     def onUnsubscribe(self):
-        logging.debug("on unsubscribe")
+        logger.debug("on unsubscribe")
         self._updateValueCallback = None
+
+
+class Gain(Characteristic):
+    def __init__(self,uuid):
+        Characteristic.__init__(self, {'uuid': uuid, 'properties': ['read', 'write'], 'value': None})
+        self._value = array.array('B', [0] * 0)
+        self._updateValueCallback = None
+
+    def onReadRequest(self, offset, callback):
+        gain = device.settings.get_detector_gain()
+        callback(Characteristic.RESULT_SUCCESS, gain.to_bytes(2, "big"))
+
+    def onWriteRequest(self, data, offset, withoutResponse, callback):
+        data = bytearray(data)
+        lsb = data[1]
+        msb = data[0]
+        gain = msb + lsb / 256.0
+        logger.debug(f"Bluetooth: Updating  gain value to {gain}")
+        device.hardware.set_detector_gain(gain)
+        callback(Characteristic.RESULT_SUCCESS)
+
                   
 class Laser_enable(Characteristic):
     def __init__(self, uuid):
@@ -157,36 +226,34 @@ class Laser_enable(Characteristic):
         self._updateValueCallback = None
         
     def onReadRequest(self, offset, callback):
-        logging.debug()
+        logger.debug()
         callback(Characteristic.RESULT_SUCCESS, self._value)
     
     def onWriteRequest(self, data, offset, withoutResponse, callback):
         self._value = data
         if data:
             device.change_setting("laser_enable", bool(data))
-            logging.debug("Laser enabled" %int(data))
+            logger.debug("Laser enabled" %int(data))
         else:
             device.change_setting("laser_enable", bool(data))
-            logging.debug("Laser disabled" %int(data))
+            logger.debug("Laser disabled" %int(data))
         if self._updateValueCallback:
             self._updateValueCallback(self._value)
         callback(Characteristic.RESULT_SUCCESS)
 
     def onSubscribe(self, maxValueSize, updateValueCallback):
-        logging.debug("onSubscribe")
+        logger.debug("onSubscribe")
         self._updateValueCallback = updatevalueCallback
         
     def onUnsubscribe(self):
-        logging.debug("on unsubscribe")
+        logger.debug("on unsubscribe")
         self._updateValueCallback = None
 
 # when does this get run? on import?
 
-logger = logging.getLogger(__name__)
-
 bus = WasatchBus()
 if len(bus.device_ids) == 0:
-    logging.debug("No Wasatch USB spectrometers found.")
+    logger.debug("No Wasatch USB spectrometers found.")
     sys.exit(0)
 
 uid = bus.device_ids[0]
