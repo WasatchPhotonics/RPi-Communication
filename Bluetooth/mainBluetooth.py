@@ -6,26 +6,30 @@ from Characteristics import *
 
 # instantiate Bleno and register callbacks
 print("instantiating Bleno")
+logger = logging.getLogger(__name__)
 
 class BLE_Communicator:
 
     def __init__(self):
+        logger = logging.getLogger(__name__)
         self.bleno = Bleno()
 
         def onStateChange(state):
-            print('on -> stateChange: ' + state);
+            logger.info('on -> stateChange: ' + state);
             if(state == "poweredOn"):
+                logger.info("Bluetooth: broadcasting gateway available for connections")
                 self.bleno.startAdvertising("wp-Spectrometer", ["dfdc"])
             else:
+                logger.info(f"Bluetooth: connection initiated {state}")
                 self.bleno.stopAdvertising()
 
 
         def onAdvertisingStart(error):
-            print('on -> advertisingStart: ' + ('error ' + error if error else 'success'));
+            logger.info('on -> advertisingStart: ' + ('error ' + error if error else 'success'));
             if error:
                 print(error)
             else:
-                print("Configuring bleno services")
+                logger.info("Configuring bleno services")
                 eeprom_cmd = EEPROM_Cmd(self.make_guid("ff07"))
                 self.bleno.setServices([
                     BlenoPrimaryService({
@@ -36,7 +40,8 @@ class BLE_Communicator:
                             Laser_enable    (self.make_guid("7610")), 
                             Read_Spectrum   (self.make_guid("ff06")),
                             eeprom_cmd,
-                            EEPROM_Data     (self.make_guid("ff08"),eeprom_cmd)
+                            EEPROM_Data     (self.make_guid("ff08"),eeprom_cmd),
+                            Battery_Status  (self.make_guid("ff09"))
                         ]
                     })
                 ])
@@ -55,10 +60,10 @@ class BLE_Communicator:
         self.bleno.start()
 
     def disconnect(self):
-        print("Closing Bleno")
+        logger.info("Closing Bleno")
         self.bleno.stopAdvertising()
         self.bleno.disconnect()
-        print("terminated")
+        logger.info("terminated")
 
         
 

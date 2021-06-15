@@ -10,11 +10,28 @@ from wasatch.WasatchDevice import WasatchDevice
 from wasatch.WasatchBus import WasatchBus
 from wasatch import applog
 
+logger = logging.getLogger(__name__)
+
 ################################################################################
 #                                                                              #
 #                                Characteristics                               #
 #                                                                              #
 ################################################################################
+class Battery_Status(Characteristic):
+    def __init__(self,uuid):
+        Characteristic.__init__(self, {'uuid': uuid, 'properties': [ 'read', 'notify'], 'value': None})
+        self._value = array.array('B', [0] * 0)
+        self.page = None
+        self.subpage = None 
+
+    def onReadRequest(self, offset, callback):
+        logging.debug("Bluetooth: batter query received")
+        if device.settings.eeprom.has_battery:
+            callback(Characteristic.RESULT_SUCCESS, bytes(device.hardware.get_battery_percentage()))
+        else:
+            callback(Characteristic.RESULT_SUCCESS,bytes(100))
+
+
 class EEPROM_Cmd(Characteristic):
     def __init__(self,uuid):
         Characteristic.__init__(self, {'uuid': uuid, 'properties': [ 'write'], 'value': None})
@@ -28,7 +45,7 @@ class EEPROM_Cmd(Characteristic):
         subpage = int(data[1])
         self.page = page
         self.subpage = subpage
-        print(f"After masking the values for page and subpage are, {page}, {subpage}")
+        (f"After masking the values for page and subpage are, {page}, {subpage}")
         callback(Characteristic.RESULT_SUCCESS)
 
     def get_page(self):
@@ -46,17 +63,17 @@ class EEPROM_Data(Characteristic):
         self._updateValueCallback = None
 
     def onReadRequest(self, offset, callback):
-        print("Attempted EEPROM read")
+        logging.debug("Attempted EEPROM read")
         page = self.eeprom_cmd.get_page()
         subpage = self.eeprom_cmd.get_subpage()
-        print(f"Pages are currently {page}, {subpage}")
-        print(f"EEPROM data is {device.settings.eeprom.write_buffers[page]}")
+        logging.debug(f"Pages are currently {page}, {subpage}")
+        logging.debug(f"EEPROM data is {device.settings.eeprom.write_buffers[page]}")
         self._value = bytearray(device.settings.eeprom.write_buffers[page])[(0+16*subpage):(16+16*subpage)]
-        print(f"Length of the sending data is {len(self._value)}")
+        logging.debug(f"Length of the sending data is {len(self._value)}")
         callback(Characteristic.RESULT_SUCCESS, self._value)
 
     def onSubscribe(self, maxValueSize, updateValueCallback):
-        print('EEPROM Data subscribed to.')
+        logging.debug('EEPROM Data subscribed to.')
         slef._updateValueCallback = updateValueCallback
 
 
@@ -67,23 +84,23 @@ class IntegrationTime(Characteristic):
         self._updateValueCallback = None
         
     def onReadRequest(self, offset, callback):
-        #print(offset, callback, self._value)
+        #logging.debug(offset, callback, self._value)
         callback(Characteristic.RESULT_SUCCESS, self._value)
         
     def onWriteRequest(self, data, offset, withoutResponse, callback):
         self._value = data
         device.change_setting("integration_time_ms", data)
-        print("Integration time changed to %d ms" % int(data))
+        logging.debug("Integration time changed to %d ms" % int.from_bytes(data,"big"))
         if self._updateValueCallback:
             self._updateValueCallback(self._value)
         callback(Characteristic.RESULT_SUCCESS)
     
     def onSubscribe(self, maxValueSize, updateValueCallback):
-        print("onSubscribe")
+        logging.debug("onSubscribe")
         self._updateValueCallback = updatevalueCallback
         
     def onUnsubscribe(self):
-        print("on unsubscribe")
+        logging.debug("on unsubscribe")
         self._updateValueCallback = None
             
 class Scans_to_average(Characteristic):
@@ -93,23 +110,23 @@ class Scans_to_average(Characteristic):
         self._updateValueCallback = None
         
     def onReadRequest(self, offset, callback):
-        print()
+        logging.debug()
         callback(Characteristic.RESULT_SUCCESS, self._value)
     
     def onWriteRequest(self, data, offset, withoutResponse, callback):
         self._value = data
         device.change_setting("scans_to_average", data)
-        print("Scans average changed to %d" %int(data))
+        logging.debug("Scans average changed to %d" %int(data))
         if self._updateValueCallback:
             self._updateValueCallback(self._value)
         callback(Characteristic.RESULT_SUCCESS)
 
     def onSubscribe(self, maxValueSize, updateValueCallback):
-        print("onSubscribe")
+        logging.debug("onSubscribe")
         self._updateValueCallback = updatevalueCallback
         
     def onUnsubscribe(self):
-        print("on unsubscribe")
+        logging.debug("on unsubscribe")
         self._updateValueCallback = None
                   
 class Read_Spectrum(Characteristic):
@@ -119,18 +136,18 @@ class Read_Spectrum(Characteristic):
         self._updateValueCallback = None
         
     def onReadRequest(self, offset, callback):
-        #print(self._value, self.value, callback, offset)
+        #logging.debug(self._value, self.value, callback, offset)
         reading = device.acquire_data()
-        print(sys.getsizeof(json.dumps(reading.spectrum)))
+        logging.debug(sys.getsizeof(json.dumps(reading.spectrum)))
         self._value = bytearray(b'768')
         callback(Characteristic.RESULT_SUCCESS, array.array('B', readin))
 
     def onSubscribe(self, maxValueSize, updateValueCallback):
-        print("onSubscribe")
+        logging.debug("onSubscribe")
         self._updateValueCallback = updatevalueCallback
         
     def onUnsubscribe(self):
-        print("on unsubscribe")
+        logging.debug("on unsubscribe")
         self._updateValueCallback = None
                   
 class Laser_enable(Characteristic):
@@ -140,44 +157,40 @@ class Laser_enable(Characteristic):
         self._updateValueCallback = None
         
     def onReadRequest(self, offset, callback):
-        print()
+        logging.debug()
         callback(Characteristic.RESULT_SUCCESS, self._value)
     
     def onWriteRequest(self, data, offset, withoutResponse, callback):
         self._value = data
         if data:
             device.change_setting("laser_enable", bool(data))
-            print("Laser enabled" %int(data))
+            logging.debug("Laser enabled" %int(data))
         else:
             device.change_setting("laser_enable", bool(data))
-            print("Laser disabled" %int(data))
+            logging.debug("Laser disabled" %int(data))
         if self._updateValueCallback:
             self._updateValueCallback(self._value)
         callback(Characteristic.RESULT_SUCCESS)
 
     def onSubscribe(self, maxValueSize, updateValueCallback):
-        print("onSubscribe")
+        logging.debug("onSubscribe")
         self._updateValueCallback = updatevalueCallback
         
     def onUnsubscribe(self):
-        print("on unsubscribe")
+        logging.debug("on unsubscribe")
         self._updateValueCallback = None
 
 # when does this get run? on import?
 
-log = logging.getLogger(__name__)
-logger = applog.MainLogger("DEBUG")
+logger = logging.getLogger(__name__)
 
-log.debug("instantiating WasatchBus")
 bus = WasatchBus()
 if len(bus.device_ids) == 0:
-    print("No Wasatch USB spectrometers found.")
+    logging.debug("No Wasatch USB spectrometers found.")
     sys.exit(0)
 
 uid = bus.device_ids[0]
-log.debug("instantiating WasatchDevice (blocking)")
 device = WasatchDevice(uid)
 
 ok = device.connect()
-log.info("connect: device connected")
 device.change_setting("integration_time_ms", 10)
