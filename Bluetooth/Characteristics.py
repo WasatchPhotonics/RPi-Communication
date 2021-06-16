@@ -232,10 +232,57 @@ class Gain(Characteristic):
                   
 class Laser_State(Characteristic):
     def __init__(self, uuid, device):
-        Characteristic.__init__(self, {'uuid': uuid, 'properties': ['read', 'write'], 'value': None})
+        Characteristic.__init__(self, {'uuid': uuid, 'properties': ['read', 'write', 'notify'], 'value': None})
         self._value = array.array('B', [0] * 0)
         self._updateValueCallback = None
+        self.raman_mode = False
         self.device = device
+        self.laser_type = 'normal'
+        self.laser_enable = False
+        aelf.laser_watchdog = False
+        self.laser_delay = 
+
+    def onReadRequest(self, offset, callback):
+       callback(Characteristic.RESULT_SUCCESS) 
+
+    def onWriteRequest(self, data, offset, withoutResponse, callback):
+        if len(data) < 6:
+            while len(data) < 6:
+                data += bytes([0])
+        msg_raman = int.from_bytes(data[0], "big")
+        msg_laser_type = int.from_bytes(data[1], "big")
+        msg_laser_enable = int.from_bytes(data[2], "big")
+        msg_laser_watch = int.from_bytes(data[3], "big")
+        msg_laser_delay = int.from_bytes(data[4:6], "big")
+
+        if msg_raman == 0:
+            self.raman_mode = False
+        elif msg_raman == 1:
+            self.raman_mode = True
+        elif msg_raman != 255:
+            self.disable_laser_error_byte()
+
+        if msg_laser_type == 0:
+            self.laser_type = 'normal'
+        elif msg_laser_type:
+            self.disable_laser_error_byte()
+
+        if msg_laser_enable == 0:
+            self.laser_enable = False
+        elif msg_laser_enable == 1:
+            self.laser_enable = True
+        elif msg_laser_enable != 255:
+            self.diable_laser_error_byte()
+
+        if msg_laser_watch == 0:
+            #turn off watchdog
+            pass
+        elif msg_laser_watch != 255:
+            #set watchdog to specific time
+            pass
+
+        self.laser_delay = msg_laser_delay
+
 
 
 class Detector_ROI(Characteristic):
@@ -254,7 +301,7 @@ class Detector_ROI(Characteristic):
 
     def onWriteRequest(self, data, offset, withoutResponse, callback):
         # For enlighten mobile the bytes are coming in cropped
-        # This pads the bytes in order to get the correct answer
+        # This pads the bytes to the ENG-120 specific 4 in order to get the correct value
         if len(data) < 4:
             while len(data) < 4:
                 data += bytes([0])
