@@ -180,12 +180,12 @@ class Read_Spectrum(Characteristic):
         spec_read = self.spec_acquire.get_current_spectra()
         pixel_offset = self.spec_cmd.get_current_offset()
         reading = spec_read.spectrum
-        logger.debug(f"Creating return bytes from reading. Starting at pixel {offset}")
+        logger.debug(f"Creating return bytes from reading. Starting at pixel {pixel_offset}")
         return_bytes = bytes()
-        while len(return_bytes) < 20  and offset < len(reading):
+        while len(return_bytes) < 180 and pixel_offset < len(reading):
             pixel_byte_value = reading[pixel_offset].to_bytes(2,"little")
             return_bytes += pixel_byte_value
-            offset += 1
+            pixel_offset += 1
         return_bytes = pixel_offset.to_bytes(2,"big") + return_bytes
         logger.debug(f"Finished building return bytes of length {len(return_bytes)} containing up to pixel {pixel_offset} and data offset is {offset}")
         callback(Characteristic.RESULT_SUCCESS, return_bytes)
