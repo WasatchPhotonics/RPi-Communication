@@ -1,4 +1,6 @@
 import os
+import sys
+import time
 import logging
 from mainBluetooth import *
 
@@ -20,14 +22,24 @@ logger.addHandler(fh)
 logger.addHandler(ch)
 
 class Gateway_Manager:
-    def __init__(self):
+    def __init__(self, device):
        logger.debug("starting gateway communication methods")
-       self.ble_comms = BLE_Communicator()
+       self.ble_comms = BLE_Communicator(device)
 
     def start(self):
        self.ble_comms.run()
        logger.debug("Running comms. Press enter to exit")
        input()
 
-gateway = Gateway_Manager()
+bus = WasatchBus()
+if len(bus.device_ids) == 0:
+    logger.debug("No spectrometer detected. Exiting gateway.")
+    sys.exit(0)
+
+uid = bus.device_ids[0]
+device = WasatchDevice(uid)
+ok = device.connect()
+device.change_setting("integration_time_ms", 10)
+
+gateway = Gateway_Manager(device)
 gateway.start()

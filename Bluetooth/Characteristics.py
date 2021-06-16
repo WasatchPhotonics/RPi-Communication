@@ -20,16 +20,17 @@ logger = logging.getLogger(__name__)
 #                                                                              #
 ################################################################################
 class Battery_Status(Characteristic):
-    def __init__(self,uuid):
+    def __init__(self, uuid, device):
         Characteristic.__init__(self, {'uuid': uuid, 'properties': [ 'read', 'notify'], 'value': None})
         self._value = array.array('B', [0] * 0)
         self.page = None
-        self.subpage = None 
+        self.subpage = None
+        self.device = device
 
     def onReadRequest(self, offset, callback):
         logger.debug("Bluetooth: Central requested battery status.")
-        if device.settings.eeprom.has_battery:
-            dev_battery = device.hardware.get_battery_percentage() 
+        if self.device.settings.eeprom.has_battery:
+            dev_battery = self.device.hardware.get_battery_percentage() 
             logger.debug(f"Bluetooth: Device has battery. Returning state of {dev_battery}%.")
             callback(Characteristic.RESULT_SUCCESS, dev_battery.to_bytes(2,"big"))
         else:
@@ -38,14 +39,16 @@ class Battery_Status(Characteristic):
             callback(Characteristic.RESULT_SUCCESS,full_battery.to_bytes(2,"big"))
 
 class Acquire_Spectrum(Characteristic):
-    def __init__(self,uuid):
+    def __init__(self, uuid, device):
         Characteristic.__init__(self, {'uuid': uuid, 'properties': ['write'], 'value': None})
         self._value = array.array('B',[0] * 0)
         self.current_spec = None
+        self.device = device
 
     def onWriteRequest(self,data,offset,withoutResponse,callback):
         logger.debug("Bluetooth: Received command to acquire spectrum. Acquiring spectrum...")
-        self.current_spec = device.take_one_averaged_reading()
+        self.current_spec = self.device.acquire_data()
+        self.current_spec = self.device.acquire_data()
         callback(Characteristic.RESULT_SUCCESS)
 
     def get_current_spectra(self):
@@ -55,10 +58,11 @@ class Acquire_Spectrum(Characteristic):
         self.current_spec = None
 
 class Spectrum_Request(Characteristic):
-    def __init__(self,uuid):
+    def __init__(self, uuid, device):
         Characteristic.__init__(self, {'uuid': uuid, 'properties': [ 'write'], 'value': None})
         self._value = array.array('B',[0] * 0)
         self.pixel_offset = None
+        self.device = device
 
     def onWriteRequest(self, data, offset, withoutResponse, callback):
         pixel_start_value = int.from_bytes(data, "big")
@@ -74,11 +78,14 @@ class Spectrum_Request(Characteristic):
 
 
 class EEPROM_Cmd(Characteristic):
-    def __init__(self,uuid):
+    def __init__(self, uuid, device):
         Characteristic.__init__(self, {'uuid': uuid, 'properties': [ 'write'], 'value': None})
         self._value = array.array('B', [0] * 0)
         self.page = None
         self.subpage = None
+        self.device = device
+        self.device.settings.eeprom.read_eeprom()
+        self.device.settings.eeprom.generate_write_buffers()
 
     def onWriteRequest(self, data, offset, withoutResponse, callback):
         # data comes in as a byte array so it is easy to manipulate
@@ -95,18 +102,18 @@ class EEPROM_Cmd(Characteristic):
         return self.subpage
 
 class EEPROM_Data(Characteristic):
-    def __init__(self,uuid,cmd_status):
+    def __init__(self, uuid, cmd_status, device):
         Characteristic.__init__(self, {'uuid': uuid, 'properties': ['read', 'notify'], 'value': None})
         self.eeprom_cmd = cmd_status
-        device.settings.eeprom.generate_write_buffers()
         self._value = array.array('B', [0] * 0)
         self._updateValueCallback = None
+        self.device = device
 
     def onReadRequest(self, offset, callback):
         page = self.eeprom_cmd.get_page()
         subpage = self.eeprom_cmd.get_subpage()
         logger.debug(f"Bluetooth: Central requested EEPROM read of page {page} and subpage {subpage}")
-        self._value = bytearray(device.settings.eeprom.write_buffers[page])[(0+16*subpage):(16+16*subpage)]
+        self._value = bytearray(self.device.settings.eeprom.write_buffers[page])[(0+16*subpage):(16+16*subpage)]
         callback(Characteristic.RESULT_SUCCESS, self._value)
 
     def onSubscribe(self, maxValueSize, updateValueCallback):
@@ -115,10 +122,11 @@ class EEPROM_Data(Characteristic):
 
 
 class IntegrationTime(Characteristic):
-    def __init__(self, uuid):
+    def __init__(self, uuid, device):
         Characteristic.__init__(self, {'uuid': uuid, 'properties': ['read', 'write'], 'value': None})
         self._value = array.array('B', [0] * 0)
         self._updateValueCallback = None
+        self.device = device
         
     def onReadRequest(self, offset, callback):
         #logger.debug(offset, callback, self._value)
@@ -126,7 +134,7 @@ class IntegrationTime(Characteristic):
         
     def onWriteRequest(self, data, offset, withoutResponse, callback):
         self._value = int.from_bytes(data,"big")
-        device.change_setting("integration_time_ms", self._value)
+        self.device.change_setting("integration_time_ms", self._value)
         logger.debug("Integration time changed to %d ms" % self._value)
         if self._updateValueCallback:
             self._updateValueCallback(self._value)
@@ -141,10 +149,11 @@ class IntegrationTime(Characteristic):
         self._updateValueCallback = None
             
 class Scans_to_average(Characteristic):
-    def __init__(self, uuid):
+    def __init__(self, uuid, device):
         Characteristic.__init__(self, {'uuid': uuid, 'properties': ['read', 'write'], 'value': None})
         self._value = array.array('B', [0] * 0)
         self._updateValueCallback = None
+        self.device = device
         
     def onReadRequest(self, offset, callback):
         logger.debug()
@@ -167,12 +176,13 @@ class Scans_to_average(Characteristic):
         self._updateValueCallback = None
                   
 class Read_Spectrum(Characteristic):
-    def __init__(self, uuid, spec_acquire, spec_cmd):
+    def __init__(self, uuid, spec_acquire, spec_cmd, device):
         Characteristic.__init__(self, {'uuid': uuid, 'properties': ['read'], 'value': None})
         self._value = array.array('B', [0] * 0)
         self._updateValueCallback = None
         self.spec_acquire = spec_acquire
         self.spec_cmd = spec_cmd
+        self.device = device
         
     def onReadRequest(self, offset, callback):
         #logger.debug(self._value, self.value, callback, offset)
@@ -200,13 +210,14 @@ class Read_Spectrum(Characteristic):
 
 
 class Gain(Characteristic):
-    def __init__(self,uuid):
+    def __init__(self, uuid, device):
         Characteristic.__init__(self, {'uuid': uuid, 'properties': ['read', 'write'], 'value': None})
         self._value = array.array('B', [0] * 0)
         self._updateValueCallback = None
+        self.device = device
 
     def onReadRequest(self, offset, callback):
-        gain = device.settings.get_detector_gain()
+        gain = self.device.settings.get_detector_gain()
         callback(Characteristic.RESULT_SUCCESS, gain.to_bytes(2, "big"))
 
     def onWriteRequest(self, data, offset, withoutResponse, callback):
@@ -215,49 +226,40 @@ class Gain(Characteristic):
         msb = data[0]
         gain = msb + lsb / 256.0
         logger.debug(f"Bluetooth: Updating  gain value to {gain}")
-        device.hardware.set_detector_gain(gain)
+        self.device.hardware.set_detector_gain(gain)
         callback(Characteristic.RESULT_SUCCESS)
 
                   
-class Laser_enable(Characteristic):
-    def __init__(self, uuid):
+class Laser_State(Characteristic):
+    def __init__(self, uuid, device):
         Characteristic.__init__(self, {'uuid': uuid, 'properties': ['read', 'write'], 'value': None})
         self._value = array.array('B', [0] * 0)
         self._updateValueCallback = None
-        
-    def onReadRequest(self, offset, callback):
-        logger.debug()
-        callback(Characteristic.RESULT_SUCCESS, self._value)
-    
-    def onWriteRequest(self, data, offset, withoutResponse, callback):
-        self._value = data
-        if data:
-            device.change_setting("laser_enable", bool(data))
-            logger.debug("Laser enabled" %int(data))
-        else:
-            device.change_setting("laser_enable", bool(data))
-            logger.debug("Laser disabled" %int(data))
-        if self._updateValueCallback:
-            self._updateValueCallback(self._value)
-        callback(Characteristic.RESULT_SUCCESS)
+        self.device = device
 
-    def onSubscribe(self, maxValueSize, updateValueCallback):
-        logger.debug("onSubscribe")
-        self._updateValueCallback = updatevalueCallback
-        
-    def onUnsubscribe(self):
-        logger.debug("on unsubscribe")
+
+class Detector_ROI(Characteristic):
+    def __init__(self, uuid, device):
+        Characteristic.__init__(self, {'uuid': uuid, 'properties': ['read', 'write'], 'value': None})
+        self._value = array.array('B', [0] * 0)
         self._updateValueCallback = None
+        self.device = device
 
-# when does this get run? on import?
+    def onReadRequest(self, offset, callback):
+        logger.debug("Bluetooth: Received request for detector roi")
+        start_roi = self.device.settings.eeprom.roi_horizontal_start
+        end_roi = self.device.settings.eeprom.roi_horizontal_end
+        return_bytes = start_roi.to_bytes(2, "big") + end_roi.to_bytes(2, "big")
+        callback(Characteristic.RESULT_SUCCESS, return_bytes)
 
-bus = WasatchBus()
-if len(bus.device_ids) == 0:
-    logger.debug("No Wasatch USB spectrometers found.")
-    sys.exit(0)
-
-uid = bus.device_ids[0]
-device = WasatchDevice(uid)
-
-ok = device.connect()
-device.change_setting("integration_time_ms", 10)
+    def onWriteRequest(self, data, offset, withoutResponse, callback):
+        # For enlighten mobile the bytes are coming in cropped
+        # This pads the bytes in order to get the correct answer
+        if len(data) < 4:
+            while len(data) < 4:
+                data += bytes([0])
+        start_roi = int.from_bytes(data[0:2], "big")
+        end_roi = int.from_bytes(data[2:4], "big")
+        logger.debug(f"Bluetooth: Received command of data {data} to set roi to {start_roi} and {end_roi}")
+        self.device.hardware.set_vertical_binning([start_roi, end_roi])
+        callback(Characteristic.RESULT_SUCCESS)
