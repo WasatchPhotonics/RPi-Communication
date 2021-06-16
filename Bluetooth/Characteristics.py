@@ -1,5 +1,6 @@
 import sys
 import json
+import time
 import array
 import struct
 import logging
@@ -176,7 +177,7 @@ class Scans_to_average(Characteristic):
         self._updateValueCallback = None
                   
 class Read_Spectrum(Characteristic):
-    def __init__(self, uuid, spec_acquire, spec_cmd, device):
+    def __init__(self, uuid, spec_acquire, spec_cmd, device, laser_state):
         Characteristic.__init__(self, {'uuid': uuid, 'properties': ['read'], 'value': None})
         self._value = array.array('B', [0] * 0)
         self._updateValueCallback = None
@@ -237,23 +238,38 @@ class Laser_State(Characteristic):
         self._updateValueCallback = None
         self.raman_mode = False
         self.device = device
-        self.laser_type = 'normal'
+        self.laser_type = 0
         self.laser_enable = False
-        aelf.laser_watchdog = False
-        self.laser_delay = 
+        self.laser_watchdog = False
+        self.watchdog_time = 5
+        self.laser_delay = 300
+
+    def disable_laser_error_byte(self):
+        self.device.hardware.set_laser_enable(False)
+        logger.warn("Bluetooth: Received an incorrect byte that triggered a laser shut off.")
 
     def onReadRequest(self, offset, callback):
-       callback(Characteristic.RESULT_SUCCESS) 
+        log.debug("Bluetooth: Received laser read request.")
+        raman_mode = self.device.hardware.get_raman_mode_enable_NOT_USED()
+        laser_type = 0
+        laser_enable = self.device.hardware.get_laser_enable()
+        laser_watchdog = self.device.hardware.get_laser_watchdog_sec()
+        laser_delay = self.device.hardware.get_raman_delay_ms()
+
+        return_bytes = raman_mode.to_bytes(2, "big") + laser_type.to_bytes(2, "big") + laser_enable.to_bytes(2, "big")
+        return_bytes += laser_watchdog.to_bytes(2, "big") + laser_delay.to_bytes(2, "big")
+        callback(Characteristic.RESULT_SUCCESS, return_bytes) 
 
     def onWriteRequest(self, data, offset, withoutResponse, callback):
-        if len(data) < 6:
-            while len(data) < 6:
-                data += bytes([0])
-        msg_raman = int.from_bytes(data[0], "big")
-        msg_laser_type = int.from_bytes(data[1], "big")
-        msg_laser_enable = int.from_bytes(data[2], "big")
-        msg_laser_watch = int.from_bytes(data[3], "big")
+        logger.debug(f"Bluetooth: Received laser write request with data {data}")
+        while len(data) < 6:
+            data += bytes([0])
+        msg_raman = int(data[0])
+        msg_laser_type = int(data[1])
+        msg_laser_enable = int(data[2])
+        msg_laser_watch = int(data[3])
         msg_laser_delay = int.from_bytes(data[4:6], "big")
+        logger.debug(f"Bluetooth: Laser message values were Raman mode {msg_raman}, Laser type {msg_laser_type}, Laser enable {msg_laser_enable}, Laser watchdog {msg_laser_watch}, and Laser delay {msg_laser_delay}.")
 
         if msg_raman == 0:
             self.raman_mode = False
@@ -263,26 +279,30 @@ class Laser_State(Characteristic):
             self.disable_laser_error_byte()
 
         if msg_laser_type == 0:
-            self.laser_type = 'normal'
-        elif msg_laser_type:
+            self.laser_type = 0
+        elif msg_laser_type != 255:
             self.disable_laser_error_byte()
 
         if msg_laser_enable == 0:
-            self.laser_enable = False
+            self.device.hardware.set_laser_enable(False)
         elif msg_laser_enable == 1:
-            self.laser_enable = True
+            self.device.hardware.set_laser_enable(True)
         elif msg_laser_enable != 255:
             self.diable_laser_error_byte()
 
-        if msg_laser_watch == 0:
-            #turn off watchdog
-            pass
-        elif msg_laser_watch != 255:
-            #set watchdog to specific time
-            pass
+        if msg_laser_watch != 255:
+            self.device.hardware.set_laser_watchdog_sec(msg_laser_watch) 
 
-        self.laser_delay = msg_laser_delay
+        self.device.hardware.set_raman_delay_ms(msg_laser_delay)
+        callback(Characteristic.RESULT_SUCCESS)
 
+    def onSubscribe(self, maxValueSize, updateValueCallback):
+        logger.debug("onSubscribe")
+        self._updateValueCallback = updatevalueCallback
+        
+    def onUnsubscribe(self):
+        logger.debug("on unsubscribe")
+        self._updateValueCallback = None
 
 
 class Detector_ROI(Characteristic):
@@ -302,9 +322,8 @@ class Detector_ROI(Characteristic):
     def onWriteRequest(self, data, offset, withoutResponse, callback):
         # For enlighten mobile the bytes are coming in cropped
         # This pads the bytes to the ENG-120 specific 4 in order to get the correct value
-        if len(data) < 4:
-            while len(data) < 4:
-                data += bytes([0])
+        while len(data) < 4:
+            data += bytes([0])
         start_roi = int.from_bytes(data[0:2], "big")
         end_roi = int.from_bytes(data[2:4], "big")
         logger.debug(f"Bluetooth: Received command of data {data} to set roi to {start_roi} and {end_roi}")

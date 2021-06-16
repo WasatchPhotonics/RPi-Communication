@@ -32,20 +32,21 @@ class BLE_Communicator:
                 print(error)
             else:
                 logger.info("Configuring bleno services")
-                eeprom_cmd = EEPROM_Cmd(self.make_guid("ff07"), self.current_device)
+                laser_state = Laser_State(self.make_guid("ff03"), self.current_device) 
                 acquire_cmd = Acquire_Spectrum (self.make_guid("ff04"), self.current_device)
-                spectrum_request_cmd = Spectrum_Request (self.make_guid("ff05"), self.current_device) 
+                spectrum_request_cmd = Spectrum_Request(self.make_guid("ff05"), self.current_device) 
+                eeprom_cmd = EEPROM_Cmd(self.make_guid("ff07"), self.current_device)
                 self.bleno.setServices([
                     BlenoPrimaryService({
                         "uuid":self.make_guid("ff00"),
                         "characteristics": [
                             IntegrationTime  (self.make_guid("ff01"), self.current_device), 
                             Gain             (self.make_guid("ff02"), self.current_device),
+                            laser_state,
                             Scans_to_average (self.make_guid("20b4"), self.current_device), 
-                            Laser_State      (self.make_guid("7610"), self.current_device), 
                             acquire_cmd,
                             spectrum_request_cmd,
-                            Read_Spectrum    (self.make_guid("ff06"),acquire_cmd,spectrum_request_cmd, self.current_device),
+                            Read_Spectrum    (self.make_guid("ff06"),acquire_cmd,spectrum_request_cmd, self.current_device, laser_state),
                             eeprom_cmd,
                             EEPROM_Data      (self.make_guid("ff08"),eeprom_cmd, self.current_device),
                             Battery_Status   (self.make_guid("ff09"), self.current_device),
