@@ -262,8 +262,6 @@ class Laser_State(Characteristic):
 
     def onWriteRequest(self, data, offset, withoutResponse, callback):
         logger.debug(f"Bluetooth: Received laser write request with data {data}")
-        while len(data) < 6:
-            data += bytes([0])
         msg_raman = int(data[0])
         msg_laser_type = int(data[1])
         msg_laser_enable = int(data[2])

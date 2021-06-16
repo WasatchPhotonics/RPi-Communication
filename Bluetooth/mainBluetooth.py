@@ -1,3 +1,4 @@
+import os
 import sys
 import signal
 from pybleno import *
@@ -12,6 +13,7 @@ class BLE_Communicator:
 
     def __init__(self, device):
         logger = logging.getLogger(__name__)
+        os.environ["BLENO_DEVICE_NAME"] = "wp-spectrometer-interface"
         self.bleno = Bleno()
         self.current_device = device
         self.active_client = None
