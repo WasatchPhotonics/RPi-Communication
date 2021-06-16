@@ -27,13 +27,13 @@ class Battery_Status(Characteristic):
         self.subpage = None 
 
     def onReadRequest(self, offset, callback):
-        logger.debug("Bluetooth: batter query received")
+        logger.debug("Bluetooth: Central requested battery status.")
         if device.settings.eeprom.has_battery:
-            logger.debug("Bluetooth: Device has batter getting state.")
             dev_battery = device.hardware.get_battery_percentage() 
+            logger.debug(f"Bluetooth: Device has battery. Returning state of {dev_battery}%.")
             callback(Characteristic.RESULT_SUCCESS, dev_battery.to_bytes(2,"big"))
         else:
-            logger.debug("Bluetooth: Device does not have battery. Sending 100%")
+            logger.debug("Bluetooth: Device does not have battery. Returning 100.%")
             full_battery = 100
             callback(Characteristic.RESULT_SUCCESS,full_battery.to_bytes(2,"big"))
 
@@ -44,7 +44,7 @@ class Acquire_Spectrum(Characteristic):
         self.current_spec = None
 
     def onWriteRequest(self,data,offset,withoutResponse,callback):
-        logger.debug("Bluetooth: Received command to acquire spectrum")
+        logger.debug("Bluetooth: Received command to acquire spectrum. Acquiring spectrum...")
         self.current_spec = device.take_one_averaged_reading()
         callback(Characteristic.RESULT_SUCCESS)
 
@@ -62,7 +62,7 @@ class Spectrum_Request(Characteristic):
 
     def onWriteRequest(self, data, offset, withoutResponse, callback):
         pixel_start_value = int.from_bytes(data, "big")
-        logger.debug(f"Bluetooth: Received request to set pixel offset for spectra {pixel_start_value}")
+        logger.debug(f"Bluetooth: Received request to set pixel offset for spectra {pixel_start_value}.")
         self.pixel_offset = pixel_start_value
         callback(Characteristic.RESULT_SUCCESS)
 
@@ -103,9 +103,9 @@ class EEPROM_Data(Characteristic):
         self._updateValueCallback = None
 
     def onReadRequest(self, offset, callback):
-        logger.debug("Bluetooth: Attempted EEPROM read")
         page = self.eeprom_cmd.get_page()
         subpage = self.eeprom_cmd.get_subpage()
+        logger.debug(f"Bluetooth: Central requested EEPROM read of page {page} and subpage {subpage}")
         self._value = bytearray(device.settings.eeprom.write_buffers[page])[(0+16*subpage):(16+16*subpage)]
         callback(Characteristic.RESULT_SUCCESS, self._value)
 
@@ -180,14 +180,14 @@ class Read_Spectrum(Characteristic):
         spec_read = self.spec_acquire.get_current_spectra()
         pixel_offset = self.spec_cmd.get_current_offset()
         reading = spec_read.spectrum
-        logger.debug(f"Creating return bytes from reading. Starting at pixel {pixel_offset}")
+        logger.debug(f"Creating return bytes from reading. Starting at pixel {pixel_offset}.")
         return_bytes = bytes()
         while len(return_bytes) < 180 and pixel_offset < len(reading):
             pixel_byte_value = reading[pixel_offset].to_bytes(2,"little")
             return_bytes += pixel_byte_value
             pixel_offset += 1
         return_bytes = pixel_offset.to_bytes(2,"big") + return_bytes
-        logger.debug(f"Finished building return bytes of length {len(return_bytes)} containing up to pixel {pixel_offset} and data offset is {offset}")
+        logger.debug(f"Finished building return bytes of length {len(return_bytes)} containing up to pixel {pixel_offset}.")
         callback(Characteristic.RESULT_SUCCESS, return_bytes)
 
     def onSubscribe(self, maxValueSize, updateValueCallback):

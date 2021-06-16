@@ -13,6 +13,7 @@ class BLE_Communicator:
     def __init__(self):
         logger = logging.getLogger(__name__)
         self.bleno = Bleno()
+        self.active_client = None
 
         def onStateChange(state):
             logger.info('on -> stateChange: ' + state);
@@ -50,9 +51,24 @@ class BLE_Communicator:
                         ]
                     })
                 ])
+        def onMtuChange(mtu):
+            logger.info(f"Primary: Central requested new MTU of {mtu}.")
 
+        def onAccept(clientAddress):
+            logger.info(f"Primary: Established new connection with {clientAddress}.")
+            self.active_client = clientAddress
+
+        def onDisconnect(clientAddress):
+            logger.info(f"Primary: Client {clientAddress} disconnected.")
+            self.active_client = None
+
+        # These bindings all come from pybleno's file Bleno.py
+        # They are not obvious in documentation and are most easily found in the source code
         self.bleno.on("stateChange", onStateChange)
         self.bleno.on("advertisingStart", onAdvertisingStart)
+        self.bleno.on("mtuChange", onMtuChange)
+        self.bleno.on("accept", onAccept)
+        self.bleno.on("disconnect", onDisconnect)
 
     def make_guid(self, id_code):
         PREFIX = 'D1A7'
