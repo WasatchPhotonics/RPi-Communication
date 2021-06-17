@@ -2,7 +2,12 @@ import os
 import sys
 import time
 import logging
+import platform
+from queue import Queue
 from mainBluetooth import *
+from deviceManager import *
+
+VERSION_NUM = '1.0.0'
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -22,24 +27,21 @@ logger.addHandler(fh)
 logger.addHandler(ch)
 
 class Gateway_Manager:
-    def __init__(self, device):
+    def __init__(self):
        logger.debug("starting gateway communication methods")
-       self.ble_comms = BLE_Communicator(device)
+       self.queues = {
+               'ble': {'send': Queue(), 'recv': Queue()},
+               'socket': {'send': Queue(), 'recv': Queue()},
+               }
+       self.dev_manager = Device_Manager(self.queues)
+       self.ble_comms = BLE_Communicator(self.dev_manager, self.queues['ble'])
 
     def start(self):
        self.ble_comms.run()
        logger.debug("Running comms. Press enter to exit")
        input()
 
-bus = WasatchBus()
-if len(bus.device_ids) == 0:
-    logger.debug("No spectrometer detected. Exiting gateway.")
-    sys.exit(0)
 
-uid = bus.device_ids[0]
-device = WasatchDevice(uid)
-ok = device.connect()
-device.change_setting("integration_time_ms", 10)
-
-gateway = Gateway_Manager(device)
+logger.info(f"Starting gateway on {platform.system()}, version number: {VERSION_NUM}")
+gateway = Gateway_Manager()
 gateway.start()

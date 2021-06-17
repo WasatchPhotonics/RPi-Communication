@@ -11,11 +11,12 @@ logger = logging.getLogger(__name__)
 
 class BLE_Communicator:
 
-    def __init__(self, device):
+    def __init__(self, dev_manager, msg_queues):
         logger = logging.getLogger(__name__)
         os.environ["BLENO_DEVICE_NAME"] = "wp-spectrometer-interface"
         self.bleno = Bleno()
-        self.current_device = device
+        self.current_device = dev_manager.device
+        self.msg_queues = msg_queues
         self.active_client = None
 
         def onStateChange(state):
@@ -37,7 +38,7 @@ class BLE_Communicator:
                 laser_state = Laser_State(self.make_guid("ff03"), self.current_device) 
                 acquire_cmd = Acquire_Spectrum (self.make_guid("ff04"), self.current_device)
                 spectrum_request_cmd = Spectrum_Request(self.make_guid("ff05"), self.current_device) 
-                eeprom_cmd = EEPROM_Cmd(self.make_guid("ff07"), self.current_device)
+                eeprom_cmd = EEPROM_Cmd(self.make_guid("ff07"), self.msg_queues)
                 self.bleno.setServices([
                     BlenoPrimaryService({
                         "uuid":self.make_guid("ff00"),
