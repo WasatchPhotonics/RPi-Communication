@@ -3,7 +3,7 @@ import sys
 import time
 import logging
 import platform
-from queue import Queue
+from queue import PriorityQueue
 from mainBluetooth import *
 from deviceManager import *
 
@@ -30,8 +30,8 @@ class Gateway_Manager:
     def __init__(self):
        logger.debug("starting gateway communication methods")
        self.queues = {
-               'ble': {'send': Queue(), 'recv': Queue()},
-               'socket': {'send': Queue(), 'recv': Queue()},
+               'ble': {'send': PriorityQueue(), 'recv': PriorityQueue()},
+               'socket': {'send': PriorityQueue(), 'recv': PriorityQueue()},
                }
        self.dev_manager = Device_Manager(self.queues)
        self.ble_comms = BLE_Communicator(self.dev_manager, self.queues['ble'])
