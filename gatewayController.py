@@ -37,7 +37,6 @@ class Gateway_Manager:
        self.ble_comms = BLE_Communicator(self.dev_manager, self.queues['ble'])
 
     def start(self):
-       self.ble_comms.run()
        logger.debug("Running comms. Press enter to exit")
        input()
 

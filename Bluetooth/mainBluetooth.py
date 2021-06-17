@@ -6,17 +6,16 @@ from pybleno import *
 from Characteristics import *
 
 # instantiate Bleno and register callbacks
-print("instantiating Bleno")
 logger = logging.getLogger(__name__)
 
 class BLE_Communicator:
 
-    def __init__(self, dev_manager, msg_queues):
-        logger = logging.getLogger(__name__)
+    def __init__(self, dev_manager, msg_queue):
         os.environ["BLENO_DEVICE_NAME"] = "wp-spectrometer-interface"
         self.bleno = Bleno()
         self.current_device = dev_manager.device
-        self.msg_queues = msg_queues
+        self.dev_manager = dev_manager
+        self.msg_queue = msg_queue
         self.active_client = None
 
         def onStateChange(state):
@@ -38,7 +37,7 @@ class BLE_Communicator:
                 laser_state = Laser_State(self.make_guid("ff03"), self.current_device) 
                 acquire_cmd = Acquire_Spectrum (self.make_guid("ff04"), self.current_device)
                 spectrum_request_cmd = Spectrum_Request(self.make_guid("ff05"), self.current_device) 
-                eeprom_cmd = EEPROM_Cmd(self.make_guid("ff07"), self.msg_queues)
+                eeprom_cmd = EEPROM_Cmd(self.make_guid("ff07"), self.current_device, self.msg_queue)
                 self.bleno.setServices([
                     BlenoPrimaryService({
                         "uuid":self.make_guid("ff00"),
@@ -75,6 +74,7 @@ class BLE_Communicator:
         self.bleno.on("mtuChange", onMtuChange)
         self.bleno.on("accept", onAccept)
         self.bleno.on("disconnect", onDisconnect)
+        self.bleno.start()
 
     def make_guid(self, id_code):
         PREFIX = 'D1A7'
@@ -84,7 +84,7 @@ class BLE_Communicator:
 
 
     def run(self):
-        self.bleno.start()
+        pass
 
     def disconnect(self):
         logger.info("Closing Bleno")

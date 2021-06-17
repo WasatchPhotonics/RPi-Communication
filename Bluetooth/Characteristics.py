@@ -5,6 +5,7 @@ import array
 import struct
 import logging
 import numpy as np
+from copy import deepcopy
 
 from pybleno import *
 
@@ -20,20 +21,13 @@ logger = logging.getLogger(__name__)
 #                                Characteristics                               #
 #                                                                              #
 ################################################################################
-
-
-# For all these classes I arbitrarily chose msg_num % 8000
-# I am just trying to ensure the msg_num does not grow arbitrarily large
-# and 8000 seems large enough to avoid conflicts
 class Battery_Status(Characteristic):
     def __init__(self, uuid, device):
         Characteristic.__init__(self, {'uuid': uuid, 'properties': [ 'read', 'notify'], 'value': None})
         self._value = array.array('B', [0] * 0)
-        self.uuid = uuid
         self.page = None
         self.subpage = None
         self.device = device
-        self.msg_num = 0
 
     def onReadRequest(self, offset, callback):
         logger.debug("Bluetooth: Central requested battery status.")
@@ -52,8 +46,6 @@ class Acquire_Spectrum(Characteristic):
         self._value = array.array('B',[0] * 0)
         self.current_spec = None
         self.device = device
-        self.uuid = uuid
-        self.msg_num = 0
 
     def onWriteRequest(self,data,offset,withoutResponse,callback):
         logger.debug("Bluetooth: Received command to acquire spectrum. Acquiring spectrum...")
@@ -73,8 +65,6 @@ class Spectrum_Request(Characteristic):
         self._value = array.array('B',[0] * 0)
         self.pixel_offset = None
         self.device = device
-        self.uuid = uuid
-        self.msg_num = 0
 
     def onWriteRequest(self, data, offset, withoutResponse, callback):
         pixel_start_value = int.from_bytes(data, "big")
@@ -90,33 +80,37 @@ class Spectrum_Request(Characteristic):
 
 
 class EEPROM_Cmd(Characteristic):
-    def __init__(self, uuid, msg_queue):
-        logger.debug(uuid)
+    def __init__(self, uuid, device, msg_queue):
         Characteristic.__init__(self, {'uuid': uuid, 'properties': [ 'write'], 'value': None})
         self._value = array.array('B', [0] * 0)
         self.page = None
         self.subpage = None
-        self.write_buffers = None
-        self.uuid = uuid
-        self.msg_num = 0
+        self.device = device
         self.msg_queue = msg_queue
+        self.write_buffers = None
+        self.msg_num = 0
+        self.guid = deepcopy(uuid)
 
     def onWriteRequest(self, data, offset, withoutResponse, callback):
         # data comes in as a byte array so it is easy to manipulate
         page = int(data[0])
         subpage = int(data[1])
-        logger.debug(self.uuid)
         if page == 0 and subpage == 0:
-            msg_id = str(msg_num)
-            self.msg_queue['send'].put((msg_id, 'EEPROM'))
-            logger.debug(f"Put message EEPROM is msg_queue")
+            msg_id = self.guid + str(self.msg_num)
+            #self.device.settings.eeprom.read_eeprom()
+            #self.device.settings.eeprom.generate_write_buffers()
+            self.msg_queue['send'].put_nowait((msg_id, 'EEPROM'))
             obtained_response = False
             while not obtained_response:
-                if not self.msg_queue['recv'].empty() and self.msg_queue['recv'][0][0] == msg_id:
-                    _, response = self.msg_queue['recv'].get()
-                    self.write_buffers = response
-                    obtained_response = True
-            msg_num += 1 % 8000
+                if not self.msg_queue['recv'].empty():
+                    response_id, response = self.msg_queue['recv'].get_nowait()
+                    logger.debug(f"Bluetooth: Got device response of id {response_id}")
+                    if response_id != msg_id:
+                        self.msg_queue['send'].put_nowait((response_id,response))
+                    else:
+                        self.write_buffers = response
+                        obtained_response = True
+            self.msg_num += 1 % 8000
         self.page = page
         self.subpage = subpage
         callback(Characteristic.RESULT_SUCCESS)
@@ -134,8 +128,6 @@ class EEPROM_Data(Characteristic):
         self._value = array.array('B', [0] * 0)
         self._updateValueCallback = None
         self.device = device
-        self.uuid = uuid
-        self.msg_num = 0
 
     def onReadRequest(self, offset, callback):
         page = self.eeprom_cmd.get_page()
@@ -155,8 +147,6 @@ class IntegrationTime(Characteristic):
         self._value = array.array('B', [0] * 0)
         self._updateValueCallback = None
         self.device = device
-        self.uuid = uuid
-        self.msg_num = 0
         
     def onReadRequest(self, offset, callback):
         #logger.debug(offset, callback, self._value)
@@ -184,8 +174,6 @@ class Scans_to_average(Characteristic):
         self._value = array.array('B', [0] * 0)
         self._updateValueCallback = None
         self.device = device
-        self.uuid = uuid
-        self.msg_num = 0
         
     def onReadRequest(self, offset, callback):
         logger.debug()
@@ -215,8 +203,6 @@ class Read_Spectrum(Characteristic):
         self.spec_acquire = spec_acquire
         self.spec_cmd = spec_cmd
         self.device = device
-        self.uuid = uuid
-        self.msg_num = 0
         
     def onReadRequest(self, offset, callback):
         #logger.debug(self._value, self.value, callback, offset)
@@ -249,8 +235,6 @@ class Gain(Characteristic):
         self._value = array.array('B', [0] * 0)
         self._updateValueCallback = None
         self.device = device
-        self.uuid = uuid
-        self.msg_num = 0
 
     def onReadRequest(self, offset, callback):
         gain = self.device.settings.get_detector_gain()
@@ -278,8 +262,6 @@ class Laser_State(Characteristic):
         self.laser_watchdog = False
         self.watchdog_time = 5
         self.laser_delay = 300
-        self.uuid = uuid
-        self.msg_num = 0
 
     def disable_laser_error_byte(self):
         self.device.hardware.set_laser_enable(False)
@@ -346,8 +328,6 @@ class Detector_ROI(Characteristic):
         self._value = array.array('B', [0] * 0)
         self._updateValueCallback = None
         self.device = device
-        self.uuid = uuid
-        self.msg_num = 0
 
     def onReadRequest(self, offset, callback):
         logger.debug("Bluetooth: Received request for detector roi")

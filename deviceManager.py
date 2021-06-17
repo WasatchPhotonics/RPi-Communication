@@ -1,9 +1,11 @@
 import sys
+import logging
 import threading
 
 from wasatch.WasatchDevice import WasatchDevice
 from wasatch.WasatchBus import WasatchBus
 
+logger = logging.getLogger(__name__)
 
 class Device_Manager:
     def __init__(self, msg_queues):
@@ -24,11 +26,11 @@ class Device_Manager:
         while True:
             for comm_method in self.msg_queues.keys():
                 if not self.msg_queues[comm_method]['send'].empty():
-                    msg_id, msg = self.msg_queues[comm_method]['send'].get()
+                    msg_id, msg = self.msg_queues[comm_method]['send'].get_nowait()
                     logger.debug(f'Device Manager: Received request from {comm_method} of {msg}')
-                    process_msg(msg_id, msg, comm_method)
+                    self.process_msg(msg_id, msg, comm_method)
 
-    def process_msg(msg_id, msg, comm_method):
+    def process_msg(self, msg_id, msg, comm_method):
 
         msg_response_funcs = {
                 'EEPROM': self.get_eeprom,
