@@ -1,6 +1,7 @@
 import os
 import sys
 import signal
+import logging
 from pybleno import *
 
 from Characteristics import *

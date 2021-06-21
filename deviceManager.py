@@ -19,7 +19,7 @@ class Device_Manager:
         ok = self.device.connect()
         self.device.change_setting("integration_time_ms", 10)
 
-        thread = threading.Thread(target=self.device_worker, daemon=True)
+        thread = threading.Thread(target=self.device_worker)
         thread.start()
 
     def device_worker(self):
@@ -63,6 +63,7 @@ class Device_Manager:
             self.msg_queues[comm_method]['recv'].put((msg_id, msg_response))
         else:
             logger.error(f"Device Manager: Received invalid request of {msg}")
+            self.msg_queues[comm_method]['recv'].put((msg_id,'INVALID_OPTION'))
 
 
     def get_eeprom(self, not_used):

@@ -6,6 +6,7 @@ import platform
 from queue import PriorityQueue
 from mainBluetooth import *
 from deviceManager import *
+from socketManager import *
 
 VERSION_NUM = '1.0.0'
 
@@ -35,6 +36,7 @@ class Gateway_Manager:
                }
        self.dev_manager = Device_Manager(self.queues)
        self.ble_comms = BLE_Communicator(self.dev_manager, self.queues['ble'])
+       self.sock_comms = Socket_Manager(self.dev_manager, self.queues['socket'])
 
     def start(self):
        logger.debug("Running comms. Press enter to exit")
