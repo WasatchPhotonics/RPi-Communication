@@ -12,6 +12,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             break
         else:
             s.send(command.encode('utf-8'))
-            response = s.recv(1024)
+            response = s.recv(4096)
             print(f"Received response of {response}")
 

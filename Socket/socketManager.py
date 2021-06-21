@@ -6,17 +6,18 @@ import threading
 logger = logging.getLogger(__name__)
 
 class Socket_Manager:
-    def __init__(self, device_manager, msg_queues):
+    def __init__(self, device_manager, msg_queues, msg_handler):
         self.port = 8181
         self.server_name = socket.gethostbyname(socket.gethostname() + ".local")
 
         self.format = 'utf-8'
         self.dev_manager = device_manager
-        self.msg_queues = msg_queues
+        self.msg_queue = msg_queues
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.bind((self.server_name, self.port))
         self.msg_len = None
         self.msg_num = 0
+        self.msg_handler = msg_handler
         self.start()
 
     def start(self):
@@ -36,9 +37,15 @@ class Socket_Manager:
                 logger.info("Socket: Received blank command. Closing connection")
                 break
             else:
+                """
+                layout of command is Command_Name:Args
+                Command_Name corresponds to dict values in device manager
+                This is needed for args that do vs do not have args
+                e.g. EEPROM vs SET_INT_TIME:13
+                """
                 command = command.decode(self.format)
                 command = command.upper()
-                command_name = command
+                command_name = command # init name to full command for case of no args
                 command_values = command.split(':')
                 command_setting = ''
                 if len(command_values) == 2:
@@ -49,9 +56,11 @@ class Socket_Manager:
                         priority = 1
                     logger.info(f"Socket: Received {command} command with setting '{command_setting}' from {client_addr}, with priority {priority}")
                     msg_id = client_addr[0] + str(self.msg_num)
-                    data = (msg_id, command)
-                    self.msg_queues['send'].put_nowait((priority, data))
-                    client_conn.send("Received your message.".encode(self.format))
+                    response = self.msg_handler(self.msg_queue, msg_id, command, priority)
+                    if command == "GET_SPECTRA":
+                        response = response.spectrum
+                    response = str(response)
+                    client_conn.send(response.encode(self.format))
                 else:
                     client_conn.send("Invalid command.".encode(self.format))
                 self.msg_num += 1
