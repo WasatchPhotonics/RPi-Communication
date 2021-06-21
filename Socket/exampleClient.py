@@ -12,6 +12,16 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             break
         else:
             s.send(command.encode('utf-8'))
+            msg = []
             response = s.recv(4096)
-            print(f"Received response of {response}")
+            total_msg_received = len(response[2:])
+            msg_len = int.from_bytes(response[:2], "big")
+            msg.append(response[2:].decode('utf-8'))
+            while total_msg_received < msg_len:
+                response = s.recv(4096)
+                msg.append(response.decode('utf-8'))
+                total_msg_received += len(response)
+                print(f"continuing response call, got message of length {len(response)} total received is {total_msg_received} of {msg_len}")
+            complete_msg = ",".join(msg)
+            print(f"Received response of {complete_msg}")
 

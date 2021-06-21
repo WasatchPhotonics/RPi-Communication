@@ -60,7 +60,10 @@ class Socket_Manager:
                     if command == "GET_SPECTRA":
                         response = response.spectrum
                     response = str(response)
-                    client_conn.send(response.encode(self.format))
+                    byte_response = response.encode(self.format)
+                    response_len = len(byte_response)
+                    response = response_len.to_bytes(2,"big") + byte_response
+                    client_conn.send(response)
                 else:
                     client_conn.send("Invalid command.".encode(self.format))
                 self.msg_num += 1

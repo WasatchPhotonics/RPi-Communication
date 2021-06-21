@@ -8,7 +8,7 @@ from mainBluetooth import *
 from deviceManager import *
 from socketManager import *
 
-VERSION_NUM = '1.0.0'
+VERSION_NUM = '1.0.2'
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
