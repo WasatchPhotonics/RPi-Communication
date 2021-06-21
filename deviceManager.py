@@ -122,14 +122,14 @@ class Device_Manager:
     def set_raman_delay(self,delay_time):
         self.device.hardware.set_raman_delay_ms(int(delay_time))
 
-    def get_laser_state(self):
+    def get_laser_state(self, not_used):
         return self.device.hardware.get_laser_enable()
 
-    def get_watch_delay(self):
+    def get_watch_delay(self, not_used):
         return self.device.hardware.get_laser_watchdog_sec()
 
-    def get_raman_delay(self):
+    def get_raman_delay(self, not_used):
         return self.device.hardware.get_raman_delay_ms()
 
-    def get_raman_mode(self):
+    def get_raman_mode(self, not_used):
         return self.device.hardware.get_raman_mode_enable_NOT_USED()
