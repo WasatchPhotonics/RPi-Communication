@@ -11,13 +11,26 @@ logger = logging.getLogger(__name__)
 
 class BLE_Communicator:
 
-    def __init__(self, dev_manager, msg_queue):
+    def __init__(self, dev_manager, msg_queue, msg_handler):
         os.environ["BLENO_DEVICE_NAME"] = "wp-spectrometer-interface"
         self.bleno = Bleno()
         self.current_device = dev_manager.device
         self.dev_manager = dev_manager
         self.msg_queue = msg_queue
         self.active_client = None
+        self.msg_handler = msg_handler
+        
+        """
+          Originally the message handler was part of the BLE class
+          I moved it to the gateway class so it could be shared
+          This required the creation of this higher order function
+          So if there is a better approach the advice is welcome
+        """
+        def send_msg_to_manager(*args):
+            response = self.msg_handler(self.msg_queue, *args)
+            return response
+
+        msg_process = send_msg_to_manager
 
         def onStateChange(state):
             logger.info('on -> stateChange: ' + state);
@@ -67,20 +80,6 @@ class BLE_Communicator:
         def onDisconnect(clientAddress):
             logger.info(f"Bluetooth: Client {clientAddress} disconnected.")
             self.active_client = None
-
-        def msg_process(request_id, request_msg, request_priority):
-            data = (request_id, request_msg)
-            self.msg_queue['send'].put_nowait((request_priority, data))
-            obtained_response = False
-            while not obtained_response:
-                if not self.msg_queue['recv'].empty():
-                    response_id, response = self.msg_queue['recv'].get_nowait()
-                    if response_id != request_id:
-                        data = (response_id, response_msg)
-                        self.msg_queue['send'].put_nowait(request_priority, data)
-                    else:
-                        obtained_response = True
-            return response
 
         # These bindings all come from pybleno's file Bleno.py
         # They are not obvious in documentation and are most easily found in the source code

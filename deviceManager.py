@@ -68,8 +68,7 @@ class Device_Manager:
         else:
             logger.error(f"Device Manager: Received invalid request of {msg}")
             self.msg_queues[comm_method]['recv'].put((msg_id,'INVALID_OPTION'))
-
-
+        
     def get_eeprom(self, not_used):
         self.device.settings.eeprom.generate_write_buffers()
         eeprom = self.device.settings.eeprom.write_buffers
