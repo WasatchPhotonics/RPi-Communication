@@ -11,11 +11,12 @@ class Socket_Manager:
         self.server_name = socket.gethostbyname(socket.gethostname() + ".local")
 
         self.format = 'utf-8'
-        self.dev_manger = device_manager
+        self.dev_manager = device_manager
         self.msg_queues = msg_queues
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.bind((self.server_name, self.port))
         self.msg_len = None
+        self.msg_num = 0
         self.start()
 
     def start(self):
@@ -36,12 +37,24 @@ class Socket_Manager:
                 break
             else:
                 command = command.decode(self.format)
-                command_values = command.split(',')
+                command = command.upper()
+                command_name = command
+                command_values = command.split(':')
+                command_setting = ''
                 if len(command_values) == 2:
-                    command, priority = command_values
-                else:
+                    command_name, command_setting = command_values
+                if self.dev_manager.is_valid_command(command_name):
                     priority = 5
-                logger.info(f"Socket: Received {command} command from {client_addr}, with priority {priority}")
-                client_conn.send("Received your message.".encode(self.format))
+                    if "laser" in command.lower():
+                        priority = 1
+                    logger.info(f"Socket: Received {command} command with setting '{command_setting}' from {client_addr}, with priority {priority}")
+                    msg_id = client_addr[0] + str(self.msg_num)
+                    data = (msg_id, command)
+                    self.msg_queues['send'].put_nowait((priority, data))
+                    client_conn.send("Received your message.".encode(self.format))
+                else:
+                    client_conn.send("Invalid command.".encode(self.format))
+                self.msg_num += 1
+                self.msg_num %= 8000
 
 

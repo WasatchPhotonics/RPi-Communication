@@ -18,22 +18,7 @@ class Device_Manager:
         self.device = WasatchDevice(uid)
         ok = self.device.connect()
         self.device.change_setting("integration_time_ms", 10)
-
-        thread = threading.Thread(target=self.device_worker)
-        thread.start()
-
-    def device_worker(self):
-        while True:
-            for comm_method in self.msg_queues.keys():
-                if not self.msg_queues[comm_method]['send'].empty():
-                    priority, data  = self.msg_queues[comm_method]['send'].get_nowait()
-                    msg_id, msg = data
-                    logger.debug(f'Device Manager: Received request from {comm_method} of {msg}')
-                    self.process_msg(msg_id, msg, comm_method)
-
-    def process_msg(self, msg_id, msg, comm_method):
-
-        msg_response_funcs = {
+        self.msg_response_funcs = {
                 'EEPROM': self.get_eeprom,
                 'HAS_BATTERY': self.has_battery,
                 'BATTERY': self.battery,
@@ -52,12 +37,31 @@ class Device_Manager:
                 'GET_RAMAN_DELAY': self.get_raman_delay,
                 'GET_RAMAN_MODE': self.get_raman_mode,
                 }
+
+        thread = threading.Thread(target=self.device_worker)
+        thread.start()
+
+    def is_valid_command(self, command):
+        command = command.replace('\n','')
+        command = command.upper()
+        return self.msg_response_funcs.get(command,False)
+
+    def device_worker(self):
+        while True:
+            for comm_method in self.msg_queues.keys():
+                if not self.msg_queues[comm_method]['send'].empty():
+                    priority, data  = self.msg_queues[comm_method]['send'].get_nowait()
+                    msg_id, msg = data
+                    logger.debug(f'Device Manager: Received request from {comm_method} of {msg}')
+                    self.process_msg(msg_id, msg, comm_method)
+
+    def process_msg(self, msg_id, msg, comm_method):
         values = msg.split(":")
         set_value = None
         if len(values) == 2:
             msg = values[0]
             set_value = values[1]
-        process_func = msg_response_funcs.get(msg,None)
+        process_func = self.msg_response_funcs.get(msg,None)
         if process_func is not None:
             msg_response = process_func(set_value)
             self.msg_queues[comm_method]['recv'].put((msg_id, msg_response))
