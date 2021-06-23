@@ -19,6 +19,9 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             msg.append(response[2:])
             while total_msg_received < msg_len:
                 response = s.recv(4096)
+                if response is None or response.decode('utf-8') == '':
+                    print('Received null response. Connection closed. Exiting.')
+                    return
                 msg.append(response)
                 total_msg_received += len(response)
                 print(f"continuing response call, got message of length {len(response)} total received is {total_msg_received} of {msg_len}")

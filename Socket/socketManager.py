@@ -1,28 +1,45 @@
 import json
+import time
 import socket
 import logging
 import threading
+import netifaces as ni
+from netifaces import AF_INET
 
 logger = logging.getLogger(__name__)
 
 class Socket_Manager:
-    def __init__(self, device_manager, msg_queues, msg_handler):
+    def __init__(self, interface, device_manager, msg_queues, msg_handler):
         self.port = 8181
-        self.server_name = socket.gethostbyname(socket.gethostname() + ".local")
+        self.server_addr = None
 
         self.format = 'utf-8'
+        self.interface = interface
         self.dev_manager = device_manager
         self.msg_queue = msg_queues
-        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_socket.bind((self.server_name, self.port))
         self.msg_len = None
         self.msg_num = 0
+        self.server_socket = None
         self.msg_handler = msg_handler
-        self.start()
+        server_thread = threading.Thread(target=self.socket_thread)
+        server_thread.start()
 
-    def start(self):
+    def socket_thread(self):
+        # keep trying to create a socket if there is no address
+        # For example if there is no ethernet cord
+        while self.server_addr is None:
+            try:
+                # This is the way to access interface ip4 addr using ifaces
+                # See https://stackoverflow.com/questions/6243276/how-to-get-the-physical-interface-ip-address-from-an-interface
+                self.server_addr = ni.ifaddresses(self.interface)[AF_INET][0]['addr']
+                self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.server_socket.bind((self.server_addr, self.port))
+            except Exception as e:
+                logger.error(f"While trying to get {self.interface} address encountered error {e}. Waiting 5 seconds before trying to get interface address again.")
+                time.sleep(5)
+                continue
         self.server_socket.listen()
-        logger.info(f"Socket: started server listening on {self.server_name} on port {self.port}")
+        logger.info(f"Socket: started server interface {self.interface} listening on {self.server_addr} on port {self.port}")
         while True:
             client_socket, addr = self.server_socket.accept()
             client = threading.Thread(target=self.client_thread, args=(client_socket,addr))
@@ -65,7 +82,10 @@ class Socket_Manager:
                     response = response_len.to_bytes(2,"big") + byte_response
                     client_conn.send(response)
                 else:
-                    client_conn.send("Invalid command.".encode(self.format))
+                    invalid_msg = "Invalid command.".encode(self.format)
+                    invalid_msg_len = len(invalid_msg)
+                    invalid_msg = invalid_msg_len.to_bytes(2,"big") + invalid_msg
+                    client_conn.send(invalid_msg)
                 self.msg_num += 1
                 self.msg_num %= 8000
 
