@@ -8,7 +8,7 @@ from mainBluetooth import *
 from deviceManager import *
 from socketManager import *
 
-VERSION_NUM = '1.0.2'
+VERSION_NUM = '1.0.4'
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -36,7 +36,8 @@ class Gateway_Manager:
                }
        self.dev_manager = Device_Manager(self.queues)
        self.ble_comms = BLE_Communicator(self.dev_manager, self.queues['ble'], self.shared_msg_handler)
-       self.sock_comms = Socket_Manager(self.dev_manager, self.queues['socket'],self.shared_msg_handler)
+       self.wifi_sock_comms = Socket_Manager('wlan0', self.dev_manager, self.queues['socket'],self.shared_msg_handler)
+       self.eth_sock_comms = Socket_Manager('eth0', self.dev_manager, self.queues['socket'], self.shared_msg_handler)
 
     def start(self):
        logger.debug("Running comms. Press enter to exit")

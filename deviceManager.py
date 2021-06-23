@@ -41,6 +41,12 @@ class Device_Manager:
         thread = threading.Thread(target=self.device_worker)
         thread.start()
 
+    # According to Wasatch Device process_commands is usually continuously updated from continuous poll
+    # This does not happen in many of these asynchronous commands 
+    # So this function ensures they arent stuck in the queue
+    def update_settings(self):
+        self.device.process_commands()
+
     def is_valid_command(self, command):
         command = command.replace('\n','')
         command = command.upper()
@@ -86,11 +92,13 @@ class Device_Manager:
     def set_gain(self, gain_value):
         gain_value = float(gain_value)
         self.device.hardware.set_detector_gain(gain_value)
+        self.update_settings()
         return True
 
     def set_int_time(self, int_value):
         int_value = float(int_value)
         self.device.change_setting("integration_time_ms",int_value)
+        self.update_settings()
         return True
 
     def get_int_time(self, not_used):
@@ -122,14 +130,14 @@ class Device_Manager:
     def set_raman_delay(self,delay_time):
         self.device.hardware.set_raman_delay_ms(int(delay_time))
 
-    def get_laser_state(self):
+    def get_laser_state(self, not_used):
         return self.device.hardware.get_laser_enable()
 
-    def get_watch_delay(self):
+    def get_watch_delay(self, not_used):
         return self.device.hardware.get_laser_watchdog_sec()
 
-    def get_raman_delay(self):
+    def get_raman_delay(self, not_used):
         return self.device.hardware.get_raman_delay_ms()
 
-    def get_raman_mode(self):
+    def get_raman_mode(self, not_used):
         return self.device.hardware.get_raman_mode_enable_NOT_USED()
