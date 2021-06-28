@@ -106,7 +106,7 @@ class Device_Manager:
 
     def get_spectra(self, not_used):
         self.device.acquire_data()
-        return self.device.acquire_data()
+        return self.device.acquire_data().spectrum
 
     def get_roi(self, not_used):
         start_roi = self.device.settings.eeprom.roi_horizontal_start
