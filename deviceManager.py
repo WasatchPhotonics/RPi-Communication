@@ -78,66 +78,70 @@ class Device_Manager:
     def get_eeprom(self, not_used):
         self.device.settings.eeprom.generate_write_buffers()
         eeprom = self.device.settings.eeprom.write_buffers
-        return eeprom
+        return (eeprom, None)
 
     def has_battery(self, not_used):
-        return self.device.settings.eeprom.has_battery
+        return (self.device.settings.eeprom.has_battery, None)
 
     def battery(self, not_used):
-        return self.device.hardware.get_battery_percentage()
+        return (self.device.hardware.get_battery_percentage(), None)
 
     def get_gain(self, not_used):
-        return self.device.settings.get_detector_gain()
+        return (self.device.settings.get_detector_gain(), None)
 
     def set_gain(self, gain_value):
         gain_value = float(gain_value)
         self.device.hardware.set_detector_gain(gain_value)
         self.update_settings()
-        return True
+        return (True, None)
 
     def set_int_time(self, int_value):
         int_value = float(int_value)
         self.device.change_setting("integration_time_ms",int_value)
         self.update_settings()
-        return True
+        return (True, None)
 
     def get_int_time(self, not_used):
-        return self.device.hardware.get_integration_time_ms()
+        return (self.device.hardware.get_integration_time_ms(), None)
 
     def get_spectra(self, not_used):
         self.device.acquire_data()
-        return self.device.acquire_data().spectrum
+        return (self.device.acquire_data().spectrum, None)
 
     def get_roi(self, not_used):
         start_roi = self.device.settings.eeprom.roi_horizontal_start
         end_roi = self.device.settings.eeprom.roi_horizontal_end
-        return (start_roi, end_roi)
+        return ((start_roi, end_roi), None)
 
     def set_roi(self, roi_values):
         start_roi, end_roi = roi_values.split(',')
         self.device.hardware.set_vertical_binning([int(start_roi), int(end_roi)])
-        return True
+        return (True, None)
 
     def set_laser(self, enabled):
         if enabled == '1':
             self.device.hardware.set_laser_enable(True)
+            return (True, None)
         else:
             self.device.hardware.set_laser_enable(False)
+            return (False, None)
 
     def set_laser_watchdog(self,timeout):
         self.device.hardware.set_laser_watchdog_sec(int(timeout))
+        return (True, None)
 
     def set_raman_delay(self,delay_time):
         self.device.hardware.set_raman_delay_ms(int(delay_time))
+        return (True, None)
 
     def get_laser_state(self, not_used):
-        return self.device.hardware.get_laser_enable()
+        return (self.device.hardware.get_laser_enable(), None)
 
     def get_watch_delay(self, not_used):
         return self.device.hardware.get_laser_watchdog_sec()
 
     def get_raman_delay(self, not_used):
-        return self.device.hardware.get_raman_delay_ms()
+        return (self.device.hardware.get_raman_delay_ms(), None)
 
     def get_raman_mode(self, not_used):
-        return self.device.hardware.get_raman_mode_enable_NOT_USED()
+        return (self.device.hardware.get_raman_mode_enable_NOT_USED(), None)

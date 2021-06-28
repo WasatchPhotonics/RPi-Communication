@@ -73,11 +73,11 @@ class Socket_Manager:
                         priority = 1
                     logger.info(f"Socket: Received {command} command with setting '{command_setting}' from {client_addr}, with priority {priority}")
                     msg_id = client_addr[0] + str(self.msg_num)
-                    response = self.msg_handler(self.msg_queue, msg_id, command, priority)
-                    if command == "GET_SPECTRA":
-                        response = response.spectrum
-                    response = str(response)
-                    byte_response = response.encode(self.format)
+                    response, response_error = self.msg_handler(self.msg_queue, msg_id, command, priority)
+                    msg_id = client_addr[0] + ':' + str(self.msg_num)
+                    response = {'ID':msg_id,'Value':response,'Error':response_error}
+                    response = json.dumps(response)
+                    byte_response = bytes(response,encoding='utf-8')
                     response_len = len(byte_response)
                     response = response_len.to_bytes(2,"big") + byte_response
                     client_conn.send(response)
