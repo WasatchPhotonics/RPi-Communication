@@ -120,12 +120,8 @@ class Application(tk.Frame):
                     total_msg_received += len(response)
                     print(f"continuing response call, got message of length {len(response)} total received is {total_msg_received} of {msg_len}")
                 complete_msg = b''.join(msg)
-                try:
-                    complete_msg = complete_msg.decode('utf-8')
-                    print(f"Received response of {complete_msg}")
-                except:
-                    complete_msg = json.loads(complete_msg)
-                    print(complete_msg)      
+                complete_msg = json.loads(complete_msg)
+                print(complete_msg)      
             if command.upper() == "GET_SPECTRA":
                 complete_msg = complete_msg.replace('[','')
                 complete_msg = complete_msg.replace(']','')
@@ -140,6 +136,11 @@ class Application(tk.Frame):
                     ax.set_xlim(min(x),max(x))
                     ax.set_ylim(min(y),max(y))
                 self.canvas.draw_idle()
+            else:
+                complete_msg = dict(complete_msg)
+                self.response_value.set(f"Response Value: {complete_msg['Value']}")
+                self.response_error.set(f"Response Error: {complete_msg['Error']}")
+                
         except:
             self.info_msg.set("Failed to send command")
 
