@@ -21,6 +21,7 @@ class Application(tk.Frame):
         self.active_y = []
         self.command_q = Queue()
         self.create_widget()
+        self.msg_num = 0
 
     def create_widget(self):
         self.response_value = tk.StringVar()
@@ -99,13 +100,14 @@ class Application(tk.Frame):
         subplt = self.active_plot
         command = self.command_input.get()
         value = self.value_input.get()
-        command = command + ':' + value
+        cmd_msg = {'ID':self.ip_input.get()+str(self.msg_num),'Command':command,'Value':value,'Error':None}
+        cmd_msg = json.dumps(cmd_msg)
         try:
             if command == '':
                 print("Closing connection")
                 return
             else:
-                self.s.send(command.encode('utf-8'))
+                self.s.send(bytes(cmd_msg,encoding='utf-8'))
                 msg = []
                 response = self.s.recv(4096)
                 total_msg_received = len(response[2:])
@@ -123,26 +125,25 @@ class Application(tk.Frame):
                 complete_msg = json.loads(complete_msg)
                 print(complete_msg)      
             if command.upper() == "GET_SPECTRA":
-                complete_msg = complete_msg.replace('[','')
-                complete_msg = complete_msg.replace(']','')
-                values = complete_msg.split(',')
-                filt_values = [val.replace(' ','') for val in values if val != '']
-                spectra_data = [float(val) for val in filt_values if val != '']
+                complete_msg_value = complete_msg['Value']
+                spectra_data = [float(val) for val in complete_msg_value if val != '']
                 self.active_x = list(range(len(spectra_data)))
                 self.active_y = spectra_data
                 ax = self.canvas.figure.axes[0]
                 self.active_line.set_data(self.active_x,self.active_y)
-                if y != []:
-                    ax.set_xlim(min(x),max(x))
-                    ax.set_ylim(min(y),max(y))
+                if self.active_y != []:
+                    ax.set_xlim(min(self.active_x),max(self.active_x))
+                    ax.set_ylim(min(self.active_y),max(self.active_y))
                 self.canvas.draw_idle()
             else:
                 complete_msg = dict(complete_msg)
                 self.response_value.set(f"Response Value: {complete_msg['Value']}")
                 self.response_error.set(f"Response Error: {complete_msg['Error']}")
+            self.msg_num += 1
+            self.msg_num %= 8000
                 
-        except:
-            self.info_msg.set("Failed to send command")
+        except Exception as e:
+            self.info_msg.set(f"Failed to send command due to {e}")
 
 
 
