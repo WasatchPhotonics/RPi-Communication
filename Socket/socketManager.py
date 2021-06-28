@@ -82,9 +82,11 @@ class Socket_Manager:
                     response = response_len.to_bytes(2,"big") + byte_response
                     client_conn.send(response)
                 else:
-                    invalid_msg = "Invalid command.".encode(self.format)
+                    msg_id = client_addr[0] + ':' + str(self.msg_num)
+                    invalid_msg = {'ID': msg_id, 'Value':None, 'Error':'Invalid command.'}
+                    invalid_msg = json.dumps(invalid_msg)
                     invalid_msg_len = len(invalid_msg)
-                    invalid_msg = invalid_msg_len.to_bytes(2,"big") + invalid_msg
+                    invalid_msg = invalid_msg_len.to_bytes(2,"big") + bytes(invalid_msg,encoding='utf-8')
                     client_conn.send(invalid_msg)
                 self.msg_num += 1
                 self.msg_num %= 8000
