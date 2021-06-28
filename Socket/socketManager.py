@@ -48,8 +48,8 @@ class Socket_Manager:
     def client_thread(self, client_conn, client_addr):
         logger.info(f"Socket: Received new client connection from address {client_addr}")
         while True:
-            command = client_conn.recv(1024)
-            if not command:
+            recv_msg = client_conn.recv(1024)
+            if not recv_msg:
                 client_conn.close()
                 logger.info("Socket: Received blank command. Closing connection")
                 break
@@ -60,18 +60,19 @@ class Socket_Manager:
                 This is needed for args that do vs do not have args
                 e.g. EEPROM vs SET_INT_TIME:13
                 """
-                command = command.decode(self.format)
-                command = command.upper()
+                recv_msg = json.loads(recv_msg)
+                recv_msg = dict(recv_msg)
+                command = recv_msg['Command'].upper()
                 command_name = command # init name to full command for case of no args
-                command_values = command.split(':')
+                command_values = recv_msg['Value']
                 command_setting = ''
+                logger.info(f"Socket: Received {command} command with setting '{command_setting}' from {client_addr}")
                 if len(command_values) == 2:
                     command_name, command_setting = command_values
                 if self.dev_manager.is_valid_command(command_name):
                     priority = 5
                     if "laser" in command.lower():
                         priority = 1
-                    logger.info(f"Socket: Received {command} command with setting '{command_setting}' from {client_addr}, with priority {priority}")
                     msg_id = client_addr[0] + str(self.msg_num)
                     response, response_error = self.msg_handler(self.msg_queue, msg_id, command, priority)
                     msg_id = client_addr[0] + ':' + str(self.msg_num)
