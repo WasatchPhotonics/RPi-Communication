@@ -62,14 +62,11 @@ class Device_Manager:
                     self.process_msg(msg_id, msg, comm_method)
 
     def process_msg(self, msg_id, msg, comm_method):
-        values = msg.split(":")
-        set_value = None
-        if len(values) == 2:
-            msg = values[0]
-            set_value = values[1]
-        process_func = self.msg_response_funcs.get(msg,None)
+        msg_cmd = msg['Command'].upper()
+        process_func = None
+        process_func = self.msg_response_funcs.get(msg_cmd,None)
         if process_func is not None:
-            msg_response = process_func(set_value)
+            msg_response = process_func(msg['Value'])
             if msg_response[1] is not None:
                 logger.error(f"Device Manager: Encountered error of {msg_response[1]} while handling msg {msg} from msg id {msg_id}")
             self.msg_queues[comm_method]['recv'].put((msg_id, msg_response))
@@ -124,13 +121,19 @@ class Device_Manager:
         return ((start_roi, end_roi), None)
 
     def set_roi(self, roi_values):
-        start_roi, end_roi = roi_values.split(',')
         try:
+            start_roi, end_roi = roi_values.split(',')
             self.device.hardware.set_vertical_binning([int(start_roi), int(end_roi)])
             return (True, None)
         except TypeError:
-            logger.error(f"Device Manager: Invalid type while in set_roi for roi values of {type(start_roi)} and {type(end_roi)}")
-            return(False, f"Received invalid roi type, start type of {type(start_roi)} and end {type(end_roi)}")
+            logger.error(f"Device Manager: Invalid type while in set_roi for roi values of {type(roi_values)}")
+            return(False, f"Received invalid roi type, start type of {type(roi_values)}")
+        except ValueError:
+            logger.error(f"Device Manager: Invalid value for roi values {roi_values}")
+            return (False, f"Received invalid roi values of {roi_values}")
+        except AttributeError:
+            logger.error(f"Device Manager: Attribute error in set_roi for value of {roi_values}")
+            return (False, f"Received invalid roi values of {roi_values}")
 
     def set_laser(self, enabled):
         if enabled == '1':

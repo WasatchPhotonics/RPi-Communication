@@ -71,8 +71,7 @@ class Socket_Manager:
                     if "laser" in command.lower():
                         priority = 1
                     msg_id = client_addr[0] + ':' + str(self.msg_num)
-                    response, response_error = self.msg_handler(self.msg_queue, msg_id, command, priority)
-                    msg_id = client_addr[0] + ':' + str(self.msg_num)
+                    response, response_error = self.msg_handler(self.msg_queue, msg_id, recv_msg, priority)
                     response = {'ID':msg_id,'Value':response,'Error':response_error}
                     response = json.dumps(response)
                     byte_response = bytes(response,encoding='utf-8')
@@ -80,8 +79,8 @@ class Socket_Manager:
                     response = response_len.to_bytes(2,"big") + byte_response
                     client_conn.send(response)
                 else:
-                    logger.error(f"socketManager: Received invalid request of {command_name} from msg id {msg_id}")
                     msg_id = client_addr[0] + ':' + str(self.msg_num)
+                    logger.error(f"socketManager: Received invalid request of {command} from msg id {msg_id}")
                     invalid_msg = {'ID': msg_id, 'Value':None, 'Error':'Invalid command.'}
                     invalid_msg = json.dumps(invalid_msg)
                     invalid_msg_len = len(invalid_msg)
