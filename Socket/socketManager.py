@@ -63,13 +63,10 @@ class Socket_Manager:
                 recv_msg = json.loads(recv_msg)
                 recv_msg = dict(recv_msg)
                 command = recv_msg['Command'].upper()
-                command_name = command # init name to full command for case of no args
                 command_values = recv_msg['Value']
                 command_setting = ''
                 logger.info(f"Socket: Received {command} command with setting '{command_setting}' from {client_addr}")
-                if len(command_values) == 2:
-                    command_name, command_setting = command_values
-                if self.dev_manager.is_valid_command(command_name):
+                if self.dev_manager.is_valid_command(command):
                     priority = 5
                     if "laser" in command.lower():
                         priority = 1
@@ -83,7 +80,7 @@ class Socket_Manager:
                     response = response_len.to_bytes(2,"big") + byte_response
                     client_conn.send(response)
                 else:
-                    logger.error(f"socketManager: Received invalid request of {msg} from msg id {msg_id}")
+                    logger.error(f"socketManager: Received invalid request of {command_name} from msg id {msg_id}")
                     msg_id = client_addr[0] + ':' + str(self.msg_num)
                     invalid_msg = {'ID': msg_id, 'Value':None, 'Error':'Invalid command.'}
                     invalid_msg = json.dumps(invalid_msg)
