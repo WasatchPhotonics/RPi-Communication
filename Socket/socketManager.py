@@ -73,7 +73,7 @@ class Socket_Manager:
                     priority = 5
                     if "laser" in command.lower():
                         priority = 1
-                    msg_id = client_addr[0] + str(self.msg_num)
+                    msg_id = client_addr[0] + ':' + str(self.msg_num)
                     response, response_error = self.msg_handler(self.msg_queue, msg_id, command, priority)
                     msg_id = client_addr[0] + ':' + str(self.msg_num)
                     response = {'ID':msg_id,'Value':response,'Error':response_error}

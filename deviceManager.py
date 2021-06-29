@@ -70,9 +70,11 @@ class Device_Manager:
         process_func = self.msg_response_funcs.get(msg,None)
         if process_func is not None:
             msg_response = process_func(set_value)
+            if msg_response[1] is not None:
+                logger.error(f'Encountered error of {msg_response[1]} while handling msg {msg} from msg id {msg_id}')
             self.msg_queues[comm_method]['recv'].put((msg_id, msg_response))
         else:
-            logger.error(f"Device Manager: Received invalid request of {msg}")
+            logger.error(f"Device Manager: Received invalid request of {msg} from msg id {msg_id}")
             self.msg_queues[comm_method]['recv'].put((msg_id,'INVALID_OPTION'))
         
     def get_eeprom(self, not_used):
@@ -90,16 +92,24 @@ class Device_Manager:
         return (self.device.settings.get_detector_gain(), None)
 
     def set_gain(self, gain_value):
-        gain_value = float(gain_value)
-        self.device.hardware.set_detector_gain(gain_value)
-        self.update_settings()
-        return (True, None)
+        try:
+            gain_value = float(gain_value)
+            self.device.hardware.set_detector_gain(gain_value)
+            self.update_settings()
+            return (True, None)
+        except TypeError:
+            logger.error(f"Invalid type while in set_gain for gain_value of {type(gain_value)}")
+            return (False, f"Invalid type for gain of {type(gain_value)}")
 
     def set_int_time(self, int_value):
-        int_value = float(int_value)
-        self.device.change_setting("integration_time_ms",int_value)
-        self.update_settings()
-        return (True, None)
+        try:
+            int_value = float(int_value)
+            self.device.change_setting("integration_time_ms",int_value)
+            self.update_settings()
+            return (True, None)
+        except TypeError:
+            logger.error(f"Invalid type while in set_int_time for int_value of {type(int_value)}")
+            return (False,f"Invalid type for integration time of {type(int_value)}")
 
     def get_int_time(self, not_used):
         return (self.device.hardware.get_integration_time_ms(), None)
@@ -115,8 +125,12 @@ class Device_Manager:
 
     def set_roi(self, roi_values):
         start_roi, end_roi = roi_values.split(',')
-        self.device.hardware.set_vertical_binning([int(start_roi), int(end_roi)])
-        return (True, None)
+        try:
+            self.device.hardware.set_vertical_binning([int(start_roi), int(end_roi)])
+            return (True, None)
+        except TypeError:
+            logger.error(f"Invalid type while in set_roi for roi values of {type(start_roi)} and {type(end_roi)}")
+            return(False, f'Received invalid roi type, start type of {type(start_roi)} and end {type(end_roi)}')
 
     def set_laser(self, enabled):
         if enabled == '1':
@@ -127,12 +141,20 @@ class Device_Manager:
             return (False, None)
 
     def set_laser_watchdog(self,timeout):
-        self.device.hardware.set_laser_watchdog_sec(int(timeout))
-        return (True, None)
+        try:
+            self.device.hardware.set_laser_watchdog_sec(int(timeout))
+            return (True, None)
+        except TypeError:
+            logger.error(f"Invalid type while in set_laser_watchdog for timeout of {type(timeout)}")
+            return (False, f"Invalid type for watchdog timeout of {type(timeout)}")
 
     def set_raman_delay(self,delay_time):
-        self.device.hardware.set_raman_delay_ms(int(delay_time))
-        return (True, None)
+        try:
+            self.device.hardware.set_raman_delay_ms(int(delay_time))
+            return (True, None)
+        except TypeError:
+            logger.error(f"Invalid type while in set_raman_delay for delay_time of {type(delay_time)}")
+            return (False, f'Invalid tpye for raman delay time of {type(delay_time)}')
 
     def get_laser_state(self, not_used):
         return (self.device.hardware.get_laser_enable(), None)
