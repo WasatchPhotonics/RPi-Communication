@@ -12,7 +12,7 @@ class Device_Manager:
         self.msg_queues = msg_queues
         bus = WasatchBus()
         if len(bus.device_ids) == 0:
-            logger.warn("No spectrometer detected. Exiting.")
+            logger.warn("Device Manager: No spectrometer detected. Exiting.")
             sys.exit(0)
         uid = bus.device_ids[0]
         self.device = WasatchDevice(uid)
@@ -58,7 +58,7 @@ class Device_Manager:
                 if not self.msg_queues[comm_method]['send'].empty():
                     priority, data  = self.msg_queues[comm_method]['send'].get_nowait()
                     msg_id, msg = data
-                    logger.debug(f'Device Manager: Received request from {comm_method} of {msg}')
+                    logger.debug(f"Device Manager: Received request from {comm_method} of {msg}")
                     self.process_msg(msg_id, msg, comm_method)
 
     def process_msg(self, msg_id, msg, comm_method):
@@ -71,7 +71,7 @@ class Device_Manager:
         if process_func is not None:
             msg_response = process_func(set_value)
             if msg_response[1] is not None:
-                logger.error(f'Encountered error of {msg_response[1]} while handling msg {msg} from msg id {msg_id}')
+                logger.error(f"Device Manager: Encountered error of {msg_response[1]} while handling msg {msg} from msg id {msg_id}")
             self.msg_queues[comm_method]['recv'].put((msg_id, msg_response))
         else:
             logger.error(f"Device Manager: Received invalid request of {msg} from msg id {msg_id}")
@@ -98,7 +98,7 @@ class Device_Manager:
             self.update_settings()
             return (True, None)
         except TypeError:
-            logger.error(f"Invalid type while in set_gain for gain_value of {type(gain_value)}")
+            logger.error(f"Device Manager: Invalid type while in set_gain for gain_value of {type(gain_value)}")
             return (False, f"Invalid type for gain of {type(gain_value)}")
 
     def set_int_time(self, int_value):
@@ -108,7 +108,7 @@ class Device_Manager:
             self.update_settings()
             return (True, None)
         except TypeError:
-            logger.error(f"Invalid type while in set_int_time for int_value of {type(int_value)}")
+            logger.error(f"Device Manager: Invalid type while in set_int_time for int_value of {type(int_value)}")
             return (False,f"Invalid type for integration time of {type(int_value)}")
 
     def get_int_time(self, not_used):
@@ -129,8 +129,8 @@ class Device_Manager:
             self.device.hardware.set_vertical_binning([int(start_roi), int(end_roi)])
             return (True, None)
         except TypeError:
-            logger.error(f"Invalid type while in set_roi for roi values of {type(start_roi)} and {type(end_roi)}")
-            return(False, f'Received invalid roi type, start type of {type(start_roi)} and end {type(end_roi)}')
+            logger.error(f"Device Manager: Invalid type while in set_roi for roi values of {type(start_roi)} and {type(end_roi)}")
+            return(False, f"Received invalid roi type, start type of {type(start_roi)} and end {type(end_roi)}")
 
     def set_laser(self, enabled):
         if enabled == '1':
@@ -145,7 +145,7 @@ class Device_Manager:
             self.device.hardware.set_laser_watchdog_sec(int(timeout))
             return (True, None)
         except TypeError:
-            logger.error(f"Invalid type while in set_laser_watchdog for timeout of {type(timeout)}")
+            logger.error(f"Device Manager: Invalid type while in set_laser_watchdog for timeout of {type(timeout)}")
             return (False, f"Invalid type for watchdog timeout of {type(timeout)}")
 
     def set_raman_delay(self,delay_time):
@@ -153,7 +153,7 @@ class Device_Manager:
             self.device.hardware.set_raman_delay_ms(int(delay_time))
             return (True, None)
         except TypeError:
-            logger.error(f"Invalid type while in set_raman_delay for delay_time of {type(delay_time)}")
+            logger.error(f"Device Manager: Invalid type while in set_raman_delay for delay_time of {type(delay_time)}")
             return (False, f'Invalid tpye for raman delay time of {type(delay_time)}')
 
     def get_laser_state(self, not_used):
