@@ -18,6 +18,10 @@ pybleno determines the MTU based on what the central device requests. This means
 
 Follow the [bleno prerequisites](https://github.com/noble/bleno#prerequisites) to setup the raspberry pi initially. 
 
+# Methodology
+
+The application starts in the gatewayController.py file. This sets up the logger, the standard message handler function, and the priority queues that handle the various communication interfaces. Once the gateway starts, it first instantiates a deviceManger object. This object is the gatekeeper through which all messaging must pass, and it is the worker that handles processing messages between the Pi and spectrometer. The first thing the devivceManger does is check if a spectrometer is connected. If there is no spectrometer, the application quits, so there must be a spectrometer connected for it to function. After it finds a spectrometer it creates a worker thread that keeps checking the various priority queues and processes a message when it finds one in the queue. After the device manager is created it creates managers for the different communications types (BLE, eth, wifi). The general overview of these managers is they receive a command and a value. This is passed into the shared message handler that bundles the information into the same format and passes it into the respective queue. Since eth and wifi both use socket communication they share a queue. Once, a response is processed the shared message handler returns the response to the manager, and it will return the result via that connection. 
+
 # Invocation
 
 Run the BLE service:
