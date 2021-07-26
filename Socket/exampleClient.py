@@ -63,7 +63,6 @@ def execute_cli_commands(args):
         print("Error: You must provide the ip address of the Raspberry-Pi in order to connect to it.")
         return
     msg_num = 0
-    hostname = socket.gethostname()
     ip_addr = socket.gethostname()
     session = Session_Manager()
     conn_status = session.attempt_conn(args.ip)
@@ -85,6 +84,7 @@ def execute_cli_commands(args):
             break
         args.command = None
         args.command_value = None
+        cmd_count += 1
     
 
 
