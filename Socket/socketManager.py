@@ -19,6 +19,7 @@ class Socket_Manager:
         self.msg_queue = msg_queues
         self.msg_len = None
         self.msg_num = 0
+        self.conn_attempt = 0
         self.server_socket = None
         self.msg_handler = msg_handler
         server_thread = threading.Thread(target=self.socket_thread)
@@ -35,9 +36,13 @@ class Socket_Manager:
                 self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.server_socket.bind((self.server_addr, self.port))
             except Exception as e:
-                logger.error(f"While trying to get {self.interface} address encountered error {e}. Waiting 5 seconds before trying to get interface address again.")
-                time.sleep(5)
+                if self.conn_attempt < 5:
+                    logger.error(f"While trying to get {self.interface} address encountered error {e}. Waiting 5 seconds before trying to get interface address again.")
+                    time.sleep(5)
+                elif self.conn_attempt == 5:
+                    logger.error(f"While trying to get {self.interface} address encountered error {e}. Already searched 5 times. Continuing search but suppressing log statements.")
                 continue
+        self.conn_attempt = 0
         self.server_socket.listen()
         logger.info(f"Socket: started server interface {self.interface} listening on {self.server_addr} on port {self.port}")
         while True:
