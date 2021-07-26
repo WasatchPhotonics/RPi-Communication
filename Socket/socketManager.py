@@ -39,6 +39,7 @@ class Socket_Manager:
                 if self.conn_attempt < 5:
                     logger.error(f"While trying to get {self.interface} address encountered error {e}. Waiting 5 seconds before trying to get interface address again.")
                     time.sleep(5)
+                    self.conn_attempt += 1
                 elif self.conn_attempt == 5:
                     logger.error(f"While trying to get {self.interface} address encountered error {e}. Already searched 5 times. Continuing search but suppressing log statements.")
                 continue
@@ -76,8 +77,10 @@ class Socket_Manager:
                     if "laser" in command.lower():
                         priority = 1
                     msg_id = client_addr[0] + ':' + str(self.msg_num)
-                    response, response_error = self.msg_handler(self.msg_queue, msg_id, recv_msg, priority)
-                    response = {'ID':msg_id,'Value':response,'Error':response_error}
+                    res = self.msg_handler(self.msg_queue, msg_id, recv_msg, priority)
+                    response = res["Res_Value"]
+                    response_error = res["Error"]
+                    response = {"ID": msg_id, "Value": response, "Error": response_error}
                     response = json.dumps(response)
                     byte_response = bytes(response,encoding='utf-8')
                     response_len = len(byte_response)
