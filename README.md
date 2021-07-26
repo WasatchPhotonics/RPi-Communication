@@ -24,23 +24,23 @@ The application starts in the gatewayController.py file. This sets up the logger
 
 # Supported Commands
 
--'EEPROM',
--'HAS_BATTERY',
--'BATTERY'(gives percentage),
--'GET_GAIN',
--'SET_GAIN',
--'SET_INT_TIME',
--'GET_INT_TIME',
--'GET_SPECTRA',
--'GET_ROI',
--'SET_ROI',
--'SET_LASER',
--'SET_WATCHDOG',
--'SET_RAMAN_DELAY',
--'GET_LASER_STATE',
--'GET_WATCHDOG_DELAY',
--'GET_RAMAN_DELAY',
--'GET_RAMAN_MODE'
+- 'EEPROM',
+- 'HAS_BATTERY',
+- 'BATTERY'(gives percentage),
+- 'GET_GAIN',
+- 'SET_GAIN',
+- 'SET_INT_TIME',
+- 'GET_INT_TIME',
+- 'GET_SPECTRA',
+- 'GET_ROI',
+- 'SET_ROI',
+- 'SET_LASER',
+- 'SET_WATCHDOG',
+- 'SET_RAMAN_DELAY',
+- 'GET_LASER_STATE',
+- 'GET_WATCHDOG_DELAY',
+- 'GET_RAMAN_DELAY',
+- 'GET_RAMAN_MODE'
 
 # Future possible features
 - multiple spectrometer support
