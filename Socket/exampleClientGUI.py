@@ -5,6 +5,7 @@ import tkinter as tk
 from queue import Queue
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
+from exampleClient import Session_Manager
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
 
 PORT = 8181
@@ -20,8 +21,11 @@ class Application(tk.Frame):
         self.active_x = []
         self.active_y = []
         self.command_q = Queue()
+        self.session = None
         self.create_widget()
         self.msg_num = 0
+        hostname = socket.gethostname()
+        self.ip_addr = socket.gethostbyname(self.hostname)
 
     def create_widget(self):
         self.response_value = tk.StringVar()
@@ -75,77 +79,44 @@ class Application(tk.Frame):
         self.command_btn.grid(row = 8, column = 1, sticky='E')
 
     def conn_socket(self):
-        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         address = self.ip_input.get()
-        print("Trying to connect to:", address)
-        try:
-            self.s.connect((address,PORT))
-            self.info_msg.set(f"Connected to {address}")
-        except Exception as e:
-            print(f"Could not connect due to {e}")
-            self.info_msg.set("Error: could not connect")
-            return
+        self.session = Session_Manager()
+        conn_status = self.session.attempt_conn(address)
+        self.info_msg.set(conn_status)
+        if "Error" in conn_status:
+            self.session = None
 
     def deconn_socket(self):
         print("try to disconnect")
-        try:
-            self.s.close()
-            self.info_msg.set("Disconnected")
-        except:
-            print("Could not disconnect")
-            self.info_msg.set("Error: could not perform disconnect")
+        deconn_status = self.session.attempt_deconn()
+        self.info_msg.set(deconn_status)
+        if "Error" not in deconn_status:
+            self.session = None
 
     def perform_socket_comm(self):
         fig = self.active_fig
         subplt = self.active_plot
         command = self.command_input.get()
         value = self.value_input.get()
-        cmd_msg = {'ID':self.ip_input.get()+str(self.msg_num),'Command':command,'Value':value,'Error':None}
-        cmd_msg = json.dumps(cmd_msg)
-        try:
-            if command == '':
-                print("Closing connection")
-                return
-            else:
-                self.s.send(bytes(cmd_msg,encoding='utf-8'))
-                msg = []
-                response = self.s.recv(4096)
-                total_msg_received = len(response[2:])
-                msg_len = int.from_bytes(response[:2], "big")
-                msg.append(response[2:])
-                while total_msg_received < msg_len:
-                    response = self.s.recv(4096)
-                    if response is None or response.decode('utf-8') == '':
-                        print('Received null response. Connection closed. Exiting.')
-                        return
-                    msg.append(response)
-                    total_msg_received += len(response)
-                    print(f"continuing response call, got message of length {len(response)} total received is {total_msg_received} of {msg_len}")
-                complete_msg = b''.join(msg)
-                complete_msg = json.loads(complete_msg)
-                print(complete_msg)      
-            if command.upper() == "GET_SPECTRA":
-                complete_msg_value = complete_msg['Value']
-                spectra_data = [float(val) for val in complete_msg_value if val != '']
-                self.active_x = list(range(len(spectra_data)))
-                self.active_y = spectra_data
-                ax = self.canvas.figure.axes[0]
-                self.active_line.set_data(self.active_x,self.active_y)
-                if self.active_y != []:
-                    ax.set_xlim(min(self.active_x),max(self.active_x))
-                    ax.set_ylim(min(self.active_y),max(self.active_y))
-                self.canvas.draw_idle()
-            else:
-                complete_msg = dict(complete_msg)
-                self.response_value.set(f"Response Value: {complete_msg['Value']}")
-                self.response_error.set(f"Response Error: {complete_msg['Error']}")
-            self.msg_num += 1
-            self.msg_num %= 8000
-                
-        except Exception as e:
-            self.info_msg.set(f"Failed to send command due to {e}")
-
-
+        msg_id = self.ip_addr+str(self.msg_num)
+        complete_msg = self.session.communicate_device_msg(msg_id, command, value)
+        if command.upper() == "GET_SPECTRA":
+            complete_msg_value = complete_msg['Value']
+            spectra_data = [float(val) for val in complete_msg_value if val != '']
+            self.active_x = list(range(len(spectra_data)))
+            self.active_y = spectra_data
+            ax = self.canvas.figure.axes[0]
+            self.active_line.set_data(self.active_x,self.active_y)
+            if self.active_y != []:
+                ax.set_xlim(min(self.active_x),max(self.active_x))
+                ax.set_ylim(min(self.active_y),max(self.active_y))
+            self.canvas.draw_idle()
+        else:
+            complete_msg = dict(complete_msg)
+            self.response_value.set(f"Response Value: {complete_msg['Value']}")
+        self.response_error.set(f"Response Error: {complete_msg['Error']}")
+        self.msg_num += 1
+        self.msg_num %= 8000
 
 root = tk.Tk()
 root.title("Example Client")
