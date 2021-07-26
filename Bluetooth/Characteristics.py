@@ -37,7 +37,7 @@ class Battery_Status(Characteristic):
         logger.debug("Bluetooth: Central requested battery status.")
         msg_id = self.guid + str(self.msg_num)
         msg = {'Command': 'HAS_BATTERY', 'Value': None}
-        has_battery = self.msg_func(msg_id, msg ,5)
+        has_battery = self.msg_func(msg_id, msg ,5)["Res_Value"]
         if has_battery:
             self.msg_num += 1
             msg_id = self.guid + str(self.msg_num)
@@ -67,7 +67,8 @@ class Acquire_Spectrum(Characteristic):
     def onWriteRequest(self,data,offset,withoutResponse,callback):
         logger.debug("Bluetooth: Received command to acquire spectrum. Acquiring spectrum...")
         msg_id = self.guid + str(self.msg_num)
-        self.current_spec = self.msg_func(msg_id,"GET_SPECTRA",5)
+        msg = {"Command": "GET_SPECTRA", "Value": None}
+        self.current_spec = self.msg_func(msg_id, msg, 5)["Res_Value"]
         self.msg_num += 1
         self.msg_num %= 8000
         callback(Characteristic.RESULT_SUCCESS)
@@ -165,7 +166,8 @@ class IntegrationTime(Characteristic):
     def onReadRequest(self, offset, callback):
         #logger.debug(offset, callback, self._value)
         msg_id = self.guid + str(self.msg_num)
-        self._value = self.msg_func(msg_id,"GET_INT_TIME",5)
+        msg = {"Command": "GET_INT_TIME", "Value": None}
+        self._value = self.msg_func(msg_id, msg ,5)
         self.msg_num += 1
         self.msg_num %= 8000
         logger.debug(f"Bluetooth: Got integration time of {self._value}")
@@ -174,8 +176,8 @@ class IntegrationTime(Characteristic):
     def onWriteRequest(self, data, offset, withoutResponse, callback):
         self._value = int.from_bytes(data,"big")
         msg_id = self.guid + str(self.msg_num)
-        int_value = f"SET_INT_TIME:{self._value}"
-        self.msg_func(msg_id,int_value,5)
+        int_value = {"Command": "SET_INT_TIME", "Value": f"{self._value}"}
+        self.msg_func(msg_id, int_value, 5)
         self.msg_num += 1
         self.msg_num %= 8000
         logger.debug("Integration time changed to %d ms" % self._value)
@@ -232,7 +234,7 @@ class Read_Spectrum(Characteristic):
         logger.debug("Bluetooth: Received request to return spectrum that has been taken.")
         spec_read = self.spec_acquire.get_current_spectra()
         pixel_offset = self.spec_cmd.get_current_offset()
-        reading = spec_read.spectrum
+        reading = spec_read
         logger.debug(f"Creating return bytes from reading. Starting at pixel {pixel_offset}.")
         return_bytes = bytes()
         while len(return_bytes) < 180 and pixel_offset < len(reading):
@@ -264,7 +266,8 @@ class Gain(Characteristic):
 
     def onReadRequest(self, offset, callback):
         msg_id = self.guid + str(msg_num)
-        gain = self.msg_func(msg_id,"GET_GAIN",5)
+        msg = {"Command": "GET_GAIN", "Value": None}
+        gain = self.msg_func(msg_id, msg, 5)["Res_Value"]
         self.msg_num += 1
         self.msg_num %= 8000
         logger.debug("Bluetooth: Received device response for gain of {gain}")
@@ -277,7 +280,8 @@ class Gain(Characteristic):
         gain = msb + lsb / 256.0
         msg_id = self.guid + str(self.msg_num)
         logger.debug(f"Bluetooth: Updating  gain value to {gain}")
-        self.msg_func(msg_id,f"SET_GAIN:{gain}",5)
+        msg = {"Command": "SET_GAIN", "Value": f"{gain}"}
+        self.msg_func(msg_id, msg, 5)
         self.msg_num += 1
         self.msg_num %= 8000
         callback(Characteristic.RESULT_SUCCESS)
@@ -302,7 +306,8 @@ class Laser_State(Characteristic):
     def disable_laser_error_byte(self):
         msg_id = self.guid + str(self.msg_num)
         self.device.hardware.set_laser_enable(False)
-        self.msg_func(msg_id,"SET_LASER:0",0)
+        msg = {"Command": "SET_LASER", "Value": "0"}
+        self.msg_func(msg_id, msg, 0)
         self.msg_num += 1
         self.msg_num %= 8000
         logger.warn("Bluetooth: Received an incorrect byte that triggered a laser shut off.")
@@ -310,11 +315,15 @@ class Laser_State(Characteristic):
     def onReadRequest(self, offset, callback):
         log.debug("Bluetooth: Received laser read request.")
         msg_id = self.guid + str(self.msg_num)
-        raman_mode = self.msg_func(msg_id,"GET_RAMAN_MODE",2)
+        msg = {"Command": "GET_RAMAN_MODE", "Value": None}
+        raman_mode = self.msg_func(msg_id, msg, 2)["Res_Value"]
         laser_type = 0
-        laser_enable = self.msg_func(msg_id,"GET_LASER_STATE",2)
-        laser_watchdog = self.msg_func(msg_id,"GET_WATCHDOG_DELAY",2)
-        laser_delay = self.msg_fun(msg_id,"GET_RAMAN_DELAY",2) 
+        msg = {"Command": "GET_LASER_STATE", "Value": None}
+        laser_enable = self.msg_func(msg_id, msg, 2)["Res_Value"]
+        msg = {"Command": "GET_WATCHDOG_DELAY", "Value": None}
+        laser_watchdog = self.msg_func(msg_id, msg, 2)["Res_Value"]
+        msg = {"Command": "GET_RAMAN_DELAY", "Value": None}
+        laser_delay = self.msg_fun(msg_id, msg, 2)["Res_Value"] 
 
         return_bytes = raman_mode.to_bytes(2, "big") + laser_type.to_bytes(2, "big") + laser_enable.to_bytes(2, "big")
         return_bytes += laser_watchdog.to_bytes(2, "big") + laser_delay.to_bytes(2, "big")
@@ -345,16 +354,20 @@ class Laser_State(Characteristic):
             self.disable_laser_error_byte()
 
         if msg_laser_enable == 0:
-            self.msg_func(msg_id,"SET_LASER:0",0)
+            msg = {"Command": "SET_LASER", "Value": "0"}
+            self.msg_func(msg_id, msg, 0)
         elif msg_laser_enable == 1:
-            self.msg_func(msg_id,"SET_LASER:1",0)
+            msg = {"Command": "SET_LASER", "Value": "1"}
+            self.msg_func(msg_id, msg, 0)
         elif msg_laser_enable != 255:
             self.diable_laser_error_byte()
 
         if msg_laser_watch != 255:
-            self.msg_func(msg_id,f"SET_WATCHDOG:{msg_laser_watch}",1)
+            msg = {"Command": "SET_WATCHDOG", "Value": f"{msg_laser_watch}"}
+            self.msg_func(msg_id, msg, 1)
 
-        self.msg_func(msg_id,f"SET_RAMAN_DELAY:{msg_laser_delay}",1)
+        msg = {"Command": "SET_RAMAN_DELAY", "Value": f"{msg_laser_delay}"}
+        self.msg_func(msg_id, msg, 1)
         self.msg_num += 1
         self.msg_num %= 8000
         callback(Characteristic.RESULT_SUCCESS)
@@ -382,7 +395,8 @@ class Detector_ROI(Characteristic):
     def onReadRequest(self, offset, callback):
         logger.debug("Bluetooth: Received request for detector roi")
         msg_id = self.guid + str(self.msg_num)
-        start_roi, end_roi = self.msg_func(msg_id,"GET_ROI",5)
+        msg = {"Command": "GET_ROI", "Value": None}
+        start_roi, end_roi = self.msg_func(msg_id, msg, 5)["Res_Value"]
         self.msg_num += 1
         self.msg_num %= 8000
         return_bytes = start_roi.to_bytes(2, "big") + end_roi.to_bytes(2, "big")
@@ -398,7 +412,8 @@ class Detector_ROI(Characteristic):
         start_roi = int.from_bytes(data[0:2], "big")
         end_roi = int.from_bytes(data[2:4], "big")
         logger.debug(f"Bluetooth: Received command of data {data} to set roi to {start_roi} and {end_roi}")
-        self.msg_func(msg_id,f"SET_ROI:{start_roi},{end_roi}",5)
+        msg = {"Command": "SET_ROI", "Value": f"{start_roi},{end_roi}"}
+        self.msg_func(msg_id, msg, 5)
         self.msg_num += 1
         self.msg_num %= 8000
         callback(Characteristic.RESULT_SUCCESS)
