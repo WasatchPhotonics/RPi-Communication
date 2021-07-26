@@ -46,7 +46,7 @@ class Gateway_Manager:
     # Used by the different communication methods BLE, Socket to send messages
     # Then return the result to that communication method
     def shared_msg_handler(self, msg_queue, request_id, request_msg, request_priority):
-        data = (request_id, request_msg)
+        data = {"Id": request_id, "Message": request_msg}
         msg_queue['send'].put_nowait((request_priority, data))
         obtained_response = False
         while not obtained_response:

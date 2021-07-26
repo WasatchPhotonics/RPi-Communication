@@ -23,8 +23,8 @@ class BLE_Communicator:
         """
           Originally the message handler was part of the BLE class
           I moved it to the gateway class so it could be shared
-          This required the creation of this higher order function
-          So if there is a better approach the advice is welcome
+          between all the comms methods (BLE, Socket)
+          This required the creation of this intermediate function
         """
         def send_msg_to_manager(*args):
             response = self.msg_handler(self.msg_queue, *args)

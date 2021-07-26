@@ -57,7 +57,8 @@ class Device_Manager:
             for comm_method in self.msg_queues.keys():
                 if not self.msg_queues[comm_method]['send'].empty():
                     priority, data  = self.msg_queues[comm_method]['send'].get_nowait()
-                    msg_id, msg = data
+                    msg_id = data["Id"]
+                    msg = data["Message"]
                     logger.debug(f"Device Manager: Received request from {comm_method} of {msg}")
                     self.process_msg(msg_id, msg, comm_method)
 
