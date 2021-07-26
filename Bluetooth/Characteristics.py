@@ -36,14 +36,17 @@ class Battery_Status(Characteristic):
     def onReadRequest(self, offset, callback):
         logger.debug("Bluetooth: Central requested battery status.")
         msg_id = self.guid + str(self.msg_num)
-        has_battery = self.msg_func(msg_id, "HAS_BATTERY",5)
+        msg = {'Command': 'HAS_BATTERY', 'Value': None}
+        has_battery = self.msg_func(msg_id, msg ,5)
         if has_battery:
             self.msg_num += 1
             msg_id = self.guid + str(self.msg_num)
-            dev_battery = self.msg_func(msg_id, "BATTERY",5)
+            msg = {'Command': 'BATTERY', 'Value': None}
+            dev_battery = self.msg_func(msg_id, msg , 5)["Res_Value"]
             logger.debug(f"Bluetooth: Device has battery. Returning state of {dev_battery}%.")
             self.msg_num += 1
             self.msg_num %= 8000
+            dev_battery = int(dev_battery)
             callback(Characteristic.RESULT_SUCCESS, dev_battery.to_bytes(2,"big"))
         else:
             logger.debug("Bluetooth: Device does not have battery. Returning 100.%")
@@ -114,7 +117,8 @@ class EEPROM_Cmd(Characteristic):
         subpage = int(data[1])
         if page == 0 and subpage == 0:
             msg_id = self.guid + str(self.msg_num)
-            self.write_buffers = self.msg_func(msg_id, 'EEPROM', 5)
+            msg = {'Command': 'EEPROM', 'Value': None}
+            self.write_buffers = self.msg_func(msg_id, msg, 5)["Res_Value"]
             self.msg_num += 1
             self.msg_num %= 8000
         self.page = page
