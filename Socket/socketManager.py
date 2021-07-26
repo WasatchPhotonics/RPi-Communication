@@ -57,7 +57,7 @@ class Socket_Manager:
             recv_msg = client_conn.recv(1024)
             if not recv_msg:
                 client_conn.close()
-                logger.info("Socket: Received blank command. Closing connection")
+                logger.info(f"Socket: Received blank command from {client_addr}. Closing connection")
                 break
             else:
                 """

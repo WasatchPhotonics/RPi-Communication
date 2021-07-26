@@ -69,7 +69,7 @@ class Device_Manager:
         if process_func is not None:
             msg_response = process_func(msg['Value'])
             if msg_response["Error"] is not None:
-                logger.error(f"Device Manager: Encountered error of {msg_response[1]} while handling msg {msg} from msg id {msg_id}")
+                logger.error(f"Device Manager: Encountered error of {msg_response['Error']} while handling msg {msg} from msg id {msg_id}")
             self.msg_queues[comm_method]['recv'].put((msg_id, msg_response))
         else:
             logger.error(f"Device Manager: Received invalid request of {msg} from msg id {msg_id}")
@@ -108,6 +108,9 @@ class Device_Manager:
         except TypeError:
             logger.error(f"Device Manager: Invalid type while in set_int_time for int_value of {type(int_value)}")
             return {"Res_Value": False, "Error": f"Invalid type for integration time of {type(int_value)}"}
+        except ValueError:
+            logger.error(f"Device Manager: Invalid value while in set_int_time for int_value of {int_value}")
+            return {"Res_Value": False, "Error": f"Invalid value for integration time of {int_value}"}
 
     def get_int_time(self, not_used):
         return {"Res_Value": self.device.hardware.get_integration_time_ms(), "Error": None}
