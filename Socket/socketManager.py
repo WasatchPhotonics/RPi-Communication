@@ -38,10 +38,10 @@ class Socket_Manager:
             except Exception as e:
                 if self.conn_attempt < 5:
                     logger.error(f"While trying to get {self.interface} address encountered error {e}. Waiting 5 seconds before trying to get interface address again.")
-                    time.sleep(5)
-                    self.conn_attempt += 1
                 elif self.conn_attempt == 5:
                     logger.error(f"While trying to get {self.interface} address encountered error {e}. Already searched 5 times. Continuing search but suppressing log statements.")
+                self.conn_attempt += 1
+                time.sleep(5)
                 continue
         self.conn_attempt = 0
         self.server_socket.listen()
