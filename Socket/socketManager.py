@@ -77,12 +77,6 @@ class Socket_Manager:
                 logger.info(f"Socket: Received blank command from {client_addr}. Closing connection")
                 break
             else:
-                """
-                layout of command is Command_Name:Args
-                Command_Name corresponds to dict values in device manager
-                This is needed for args that do vs do not have args
-                e.g. EEPROM vs SET_INT_TIME:13
-                """
                 recv_msg = json.loads(recv_msg)
                 recv_msg = dict(recv_msg)
                 command = recv_msg['Command'].upper()
