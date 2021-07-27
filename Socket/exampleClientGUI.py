@@ -24,7 +24,7 @@ class Application(tk.Frame):
         self.session = None
         self.create_widget()
         self.msg_num = 0
-        self.ip_addr = socket.gethostname()
+        self.ip_addr = socket.gethostbyname("")
 
     def create_widget(self):
         self.response_value = tk.StringVar()
