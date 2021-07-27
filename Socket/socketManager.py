@@ -9,13 +9,16 @@ from netifaces import AF_INET
 logger = logging.getLogger(__name__)
 
 class Socket_Manager:
-    def __init__(self, interface, device_manager, msg_queues, msg_handler):
+    def __init__(self, interface, device_manager, msg_queues, msg_handler, iface_restart_q):
+        self.is_active = True
+        self.setting_up_socket = True
         self.port = 8181
         self.server_addr = None
 
         self.format = 'utf-8'
         self.interface = interface
         self.dev_manager = device_manager
+        self.iface_restart_q = iface_restart_q
         self.msg_queue = msg_queues
         self.msg_len = None
         self.msg_num = 0
@@ -24,6 +27,16 @@ class Socket_Manager:
         self.msg_handler = msg_handler
         server_thread = threading.Thread(target=self.socket_thread)
         server_thread.start()
+        interface_checker_thread = threading.Thread(target=self.check_interface_active_thread)
+        interface_checker_thread.start()
+
+    def check_interface_active_thread(self):
+        while True:
+            interfaces = ni.ifaddresses(self.interface)
+            self.is_active = ni.AF_INET in interfaces
+            if self.is_active == False and self.setting_up_socket == False:
+                self.iface_restart_q.put_nowait(self.interface)
+                break
 
     def socket_thread(self):
         # keep trying to create a socket if there is no address
@@ -43,6 +56,8 @@ class Socket_Manager:
                 self.conn_attempt += 1
                 time.sleep(5)
                 continue
+        self.setting_up_socket = False #This indicates the interface setup was successful 
+                                       #so if it goes down after this try a reconnect
         self.conn_attempt = 0
         self.server_socket.listen()
         logger.info(f"Socket: started server interface {self.interface} listening on {self.server_addr} on port {self.port}")
@@ -50,6 +65,8 @@ class Socket_Manager:
             client_socket, addr = self.server_socket.accept()
             client = threading.Thread(target=self.client_thread, args=(client_socket,addr))
             client.start()
+            if self.is_active == False:
+                break
 
     def client_thread(self, client_conn, client_addr):
         logger.info(f"Socket: Received new client connection from address {client_addr}")

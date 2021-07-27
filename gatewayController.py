@@ -3,12 +3,13 @@ import sys
 import time
 import logging
 import platform
-from queue import PriorityQueue
+import threading
+from queue import PriorityQueue, Queue
 from mainBluetooth import *
 from deviceManager import *
 from socketManager import *
 
-VERSION_NUM = '1.0.4'
+VERSION_NUM = '1.0.5'
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -34,15 +35,39 @@ class Gateway_Manager:
                'ble': {'send': PriorityQueue(), 'recv': PriorityQueue()},
                'socket': {'send': PriorityQueue(), 'recv': PriorityQueue()},
                }
+       self.interface_restart_msg_q = Queue()
        self.dev_manager = Device_Manager(self.queues)
-       self.ble_comms = BLE_Communicator(self.dev_manager, self.queues['ble'], self.shared_msg_handler)
-       self.wifi_sock_comms = Socket_Manager('wlan0', self.dev_manager, self.queues['socket'],self.shared_msg_handler)
-       self.eth_sock_comms = Socket_Manager('eth0', self.dev_manager, self.queues['socket'], self.shared_msg_handler)
+       self.ble_comms = BLE_Communicator('ble', self.dev_manager, self.queues['ble'], self.shared_msg_handler,self.interface_restart_msg_q)
+       self.wifi_sock_comms = Socket_Manager('wlan0', self.dev_manager, self.queues['socket'],self.shared_msg_handler,self.interface_restart_msg_q)
+       self.eth_sock_comms = Socket_Manager('eth0', self.dev_manager, self.queues['socket'], self.shared_msg_handler,self.interface_restart_msg_q)
+       self.comm_class = {
+               "wlan0": Socket_Manager,
+               "eth0": Socket_Manager,
+               }
+       self.comm_instance = {
+               "wlan0": self.wifi_sock_comms,
+               "eth0": self.eth_sock_comms,
+               }
+       #reconn_status is used to indicate if an attempt is underway to setup the interface again
+       #without this, it keeps trying to setup the interface, resulting in many unneeded instances
+       interface_check_thread = threading.Thread(target=self.manager_checker)
+       interface_check_thread.start()
 
     def start(self):
-       logger.debug("Running comms. Press enter to exit")
+       logger.debug("Running comms.")
        input()
-       
+
+    def manager_checker(self):
+        """Runs an infinite loop to see if the comm method has indicate the interface is down
+           If it is down, try to reconnect."""
+        while True:
+            if not self.interface_restart_msg_q.empty():
+                iface = self.interface_restart_msg_q.get_nowait()
+                logger.error(f"Gateway: {iface} indicated it went down. Setting up new manager.")
+                comm_class = self.comm_class[iface]
+                msg_q = self.comm_instance[iface].msg_queue
+                self.comm_instance[iface] = comm_class(iface, self.dev_manager, msg_q, self.shared_msg_handler,self.interface_restart_msg_q)
+
     # Used by the different communication methods BLE, Socket to send messages
     # Then return the result to that communication method
     def shared_msg_handler(self, msg_queue, request_id, request_msg, request_priority):
