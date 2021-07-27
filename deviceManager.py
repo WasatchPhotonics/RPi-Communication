@@ -38,8 +38,8 @@ class Device_Manager:
                 'GET_RAMAN_MODE': self.get_raman_mode,
                 }
 
-        thread = threading.Thread(target=self.device_worker)
-        thread.start()
+        worker_thread = threading.Thread(target=self.device_worker)
+        worker_thread.start()
 
     # According to Wasatch Device process_commands is usually continuously updated from continuous poll
     # This does not happen in many of these asynchronous commands 

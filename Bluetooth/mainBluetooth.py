@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class BLE_Communicator:
 
-    def __init__(self, dev_manager, msg_queue, msg_handler):
+    def __init__(self, interface, dev_manager, msg_queue, msg_handler,iface_restart_q):
         os.environ["BLENO_DEVICE_NAME"] = "wp-spectrometer-interface"
         self.bleno = Bleno()
         self.current_device = dev_manager.device
@@ -19,6 +19,9 @@ class BLE_Communicator:
         self.msg_queue = msg_queue
         self.active_client = None
         self.msg_handler = msg_handler
+        self.interface = interface #currently these three aren't used
+        self.is_active = True      #they're meant for symmetry in comm manager classes
+        self.iface_restart_q = iface_restart_q
         
         """
           Originally the message handler was part of the BLE class
