@@ -87,7 +87,11 @@ class Device_Manager:
         return {"Res_Value": self.device.hardware.get_battery_percentage(), "Error": None}
 
     def get_gain(self, not_used):
-        return {"Res_Value": self.device.settings.get_detector_gain(), "Error": None}
+        try:
+            return {"Res_Value": self.device.hardware.get_detector_gain(), "Error": None}
+        except Exception as e:
+            logger.error(f"Ran into error while trying to get gain. {e}")
+            return {"Res_Value": None, "Error": "Ran into error while trying to get gain."}
 
     def set_gain(self, gain_value):
         try:
@@ -113,7 +117,9 @@ class Device_Manager:
             return {"Res_Value": False, "Error": f"Invalid value for integration time of {int_value}"}
 
     def get_int_time(self, not_used):
-        return {"Res_Value": self.device.hardware.get_integration_time_ms(), "Error": None}
+        res = {"Res_Value": self.device.hardware.get_integration_time_ms(), "Error": None}
+        logger.info(f"Received integration time of {res['Res_Value']}")
+        return res
 
     def get_spectra(self, not_used):
         self.device.acquire_data()

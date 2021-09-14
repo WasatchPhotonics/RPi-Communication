@@ -37,16 +37,33 @@ class Gateway_Manager:
                }
        self.interface_restart_msg_q = Queue()
        self.dev_manager = Device_Manager(self.queues)
-       self.ble_comms = BLE_Communicator('ble', self.dev_manager, self.queues['ble'], self.shared_msg_handler,self.interface_restart_msg_q)
-       self.wifi_sock_comms = Socket_Manager('wlan0', self.dev_manager, self.queues['socket'],self.shared_msg_handler,self.interface_restart_msg_q)
-       self.eth_sock_comms = Socket_Manager('eth0', self.dev_manager, self.queues['socket'], self.shared_msg_handler,self.interface_restart_msg_q)
+       self.ble_comms = BLE_Communicator('ble', 
+                                        self.dev_manager, 
+                                        self.queues['ble'], 
+                                        self.shared_msg_handler,
+                                        self.interface_restart_msg_q
+                                        )
+       self.wifi_sock_comms = Socket_Manager('wlan0', 
+                                            self.dev_manager, 
+                                            self.queues['socket'],
+                                            self.shared_msg_handler,
+                                            self.interface_restart_msg_q
+                                            )
+       self.eth_sock_comms = Socket_Manager('eth0',
+                                            self.dev_manager, 
+                                            self.queues['socket'], 
+                                            self.shared_msg_handler,
+                                            self.interface_restart_msg_q
+                                            )
        self.comm_class = {
                "wlan0": Socket_Manager,
                "eth0": Socket_Manager,
+               "ble": BLE_Communicator,
                }
        self.comm_instance = {
                "wlan0": self.wifi_sock_comms,
                "eth0": self.eth_sock_comms,
+               "ble": self.ble_comms,
                }
        #reconn_status is used to indicate if an attempt is underway to setup the interface again
        #without this, it keeps trying to setup the interface, resulting in many unneeded instances
@@ -66,7 +83,12 @@ class Gateway_Manager:
                 logger.error(f"Gateway: {iface} indicated it went down. Setting up new manager.")
                 comm_class = self.comm_class[iface]
                 msg_q = self.comm_instance[iface].msg_queue
-                self.comm_instance[iface] = comm_class(iface, self.dev_manager, msg_q, self.shared_msg_handler,self.interface_restart_msg_q)
+                self.comm_instance[iface] = comm_class(iface,
+                                                        self.dev_manager,
+                                                        msg_q,
+                                                        self.shared_msg_handler,
+                                                        self.interface_restart_msg_q
+                                                        )
 
     # Used by the different communication methods BLE, Socket to send messages
     # Then return the result to that communication method
