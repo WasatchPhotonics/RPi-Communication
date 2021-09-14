@@ -11,7 +11,6 @@ cwd = os.getcwd()
 sys.path.append(''.join([cwd,'/Bluetooth']))
 sys.path.append(''.join([cwd,'/Socket']))
 sys.path.append(''.join([cwd,'/../Wasatch.PY']))
-print(sys.path)
 
 from mainBluetooth import *
 from deviceManager import *
