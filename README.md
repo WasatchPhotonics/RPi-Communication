@@ -52,6 +52,6 @@ The application starts in the gatewayController.py file. This sets up the logger
 
 Run the BLE service:
 
-    $ sudo PYTHONPATH='./Bluetooth:./Socket:/path/to/Wasatch.PY' python -u gatewayController.py
+    $ sudo python3 -u gatewayController.py
 
 (Sudo required because pybleno [uses raw sockets](https://github.com/Adam-Langley/pybleno/issues/12#issuecomment-386927390)).
