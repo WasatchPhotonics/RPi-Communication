@@ -31,7 +31,7 @@ If the spectrometer is disconnected or needs to be hot-plugged, it will reconnec
 
 - 'EEPROM',
 - 'HAS_BATTERY',
-- 'BATTERY'(gives percentage),
+- 'BATTERY', *#responds with battery charge %*
 - 'GET_GAIN',
 - 'SET_GAIN',
 - 'SET_INT_TIME',
