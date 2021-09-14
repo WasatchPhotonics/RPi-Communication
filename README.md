@@ -1,10 +1,9 @@
 # RPi-Communication
 
 This repository is the program that allows a raspberry pi connected to a spectrometer via usb to communicate over different protocols including:
-  -USB
-  -BLE
-  -Wi-Fi
-  -Ethernet
+  - BLE
+  - Wi-Fi
+  - Ethernet
 
 pybleno determines the name advertised that shows up in the app, but to change the name of the device read by ble communication the pi needs a new file called [/etc/machine-info](https://stackoverflow.com/questions/26299053/changing-raspberry-pi-bluetooth-device-name)
 
