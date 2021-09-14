@@ -8,7 +8,7 @@ This repository is the program that allows a raspberry pi connected to a spectro
 
 pybleno determines the name advertised that shows up in the app, but to change the name of the device read by ble communication the pi needs a new file called [/etc/machine-info](https://stackoverflow.com/questions/26299053/changing-raspberry-pi-bluetooth-device-name)
 
-pybleno determines the MTU based on what the central device requests. This means you should request an MTU of at least 256 or else reading spectra will not work.
+pybleno determines the MTU based on what the central device requests. This means the device that connects to the pi must request an MTU of at least 256 or else reading spectra will not work.
 
 In the Socket folder, exampleClient.py and exampleClientGUI.py provide a CLI and GUI interface for connecting to the RPi, respectively.
 
