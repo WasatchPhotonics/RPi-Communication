@@ -47,6 +47,7 @@ The application starts in the gatewayController.py file. This sets up the logger
 # Future possible features
 - multiple spectrometer support
 - additional commands
+- http web page view
 
 # Invocation
 
