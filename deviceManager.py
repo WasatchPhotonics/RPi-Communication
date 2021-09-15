@@ -1,4 +1,5 @@
 import sys
+import time
 import logging
 import threading
 
@@ -10,14 +11,8 @@ logger = logging.getLogger(__name__)
 class Device_Manager:
     def __init__(self, msg_queues):
         self.msg_queues = msg_queues
-        bus = WasatchBus()
-        if len(bus.device_ids) == 0:
-            logger.warn("Device Manager: No spectrometer detected. Exiting.")
-            sys.exit(0)
-        uid = bus.device_ids[0]
-        self.device = WasatchDevice(uid)
-        ok = self.device.connect()
-        self.device.change_setting("integration_time_ms", 10)
+        self.device = None
+        connected = False
         self.msg_response_funcs = {
                 'EEPROM': self.get_eeprom,
                 'HAS_BATTERY': self.has_battery,
@@ -37,9 +32,47 @@ class Device_Manager:
                 'GET_RAMAN_DELAY': self.get_raman_delay,
                 'GET_RAMAN_MODE': self.get_raman_mode,
                 }
-
+        self.connection_thread = threading.Thread(target=self.connect_new_spec)
+        self.connection_thread.start()
         worker_thread = threading.Thread(target=self.device_worker)
         worker_thread.start()
+        self.conn_watch = threading.Thread(target=self.connection_watchdog)
+        self.conn_watch.start()
+
+    def connection_watchdog(self):
+        if self.check_device_connected() and self.connection_thread == None:
+            logger.info("Device Manager: Identified lost connection with spectrometer. Attempting to reconnect.")
+            self.connection_thread = threading.Thread(target=self.connect_new_spec)
+            self.connection_thread.start()
+        time.sleep(1)
+
+    def connect_new_spec(self):
+        logger.info("Device Manager: Trying to connect new spectrometer.")
+        connected = False
+        self.connection_attempt_count = 0
+        logging.getLogger().setLevel(logging.INFO)
+        while not connected:
+            try:
+                self.connection_attempt_count += 1
+                bus = WasatchBus()
+                uid = bus.device_ids[0]
+                self.device = WasatchDevice(uid)
+                ok = self.device.connect()
+                if not ok:
+                    raise
+                self.device.change_setting("integration_time_ms", 10)
+                self.update_settings()
+                self.connection_attempt_count = 0
+                logging.getLogger().setLevel(logging.DEBUG)
+                logger.info("Device Manager: Succeeded in device connection.")
+                self.connection_thread = None
+                connected = True
+            except:
+                if self.connection_attempt_count < 3:
+                    logger.error("Device Manager: Unable to connect. Retrying.")
+                if self.connection_attempt_count == 4:
+                    logger.error("Device Manger: Unable to connect after 3 tries. Continuing but suppressing log statements.")
+                time.sleep(1)
 
     # According to Wasatch Device process_commands is usually continuously updated from continuous poll
     # This does not happen in many of these asynchronous commands 
@@ -62,6 +95,11 @@ class Device_Manager:
                     logger.debug(f"Device Manager: Received request from {comm_method} of {msg}")
                     self.process_msg(msg_id, msg, comm_method)
 
+    def check_device_connected(self):
+        # The rather messy following line is meant to check if we are still connected
+        # Not all errors immediately indicate a connection issue nor do connection issues bubble up from Wasatch.PY
+        return self.device == None or self.device.hardware == None or (self.device.hardware.shutdown_requested or (not self.device.hardware.connected and not self.device.hardware.connecting))
+
     def process_msg(self, msg_id, msg, comm_method):
         msg_cmd = msg['Command'].upper()
         process_func = None
@@ -70,27 +108,42 @@ class Device_Manager:
             msg_response = process_func(msg['Value'])
             if msg_response["Error"] is not None:
                 logger.error(f"Device Manager: Encountered error of {msg_response['Error']} while handling msg {msg} from msg id {msg_id}")
+            if self.check_device_connected():
+                msg_response["Error"] = "Device is not connected. Check connection then send a few commands to verify reconnection."
+            logger.info("Device Manager: Providing msg respone")
             self.msg_queues[comm_method]['recv'].put((msg_id, msg_response))
         else:
             logger.error(f"Device Manager: Received invalid request of {msg} from msg id {msg_id}")
             self.msg_queues[comm_method]['recv'].put((msg_id,'INVALID_OPTION'))
         
     def get_eeprom(self, not_used):
-        self.device.settings.eeprom.generate_write_buffers()
-        eeprom = self.device.settings.eeprom.write_buffers
-        return {"Res_Value": eeprom, "Error": None}
+        try:
+            self.device.settings.eeprom.generate_write_buffers()
+            eeprom = self.device.settings.eeprom.write_buffers
+            return {"Res_Value": eeprom, "Error": None}
+        except Exception as e:
+            logger.error(f"Device Manager: Ran into error while trying to get eeprom {e}")
+            return {"Res_Value": None, "Error": "Ran into error while trying to get eeprom"}
 
     def has_battery(self, not_used):
-        return {"Res_Value": self.device.settings.eeprom.has_battery, "Error": None}
+        try:
+            return {"Res_Value": self.device.settings.eeprom.has_battery, "Error": None}
+        except Exception as e:
+            logger.error(f"Device Manager: Ran into error while trying to check for battery {e}")
+            return {"Res_Value": None, "Error": "Ran into error while trying to check for battery"}
 
     def battery(self, not_used):
-        return {"Res_Value": self.device.hardware.get_battery_percentage(), "Error": None}
+        try:
+            return {"Res_Value": self.device.hardware.get_battery_percentage(), "Error": None}
+        except Exception as e:
+            logger.error(f"Device Manager: Ran into error while trying to get battery % {e}")
+            return {"Res_Value": None, "Error": "Ran into error while trying to get battery %"}
 
     def get_gain(self, not_used):
         try:
             return {"Res_Value": self.device.hardware.get_detector_gain(), "Error": None}
         except Exception as e:
-            logger.error(f"Ran into error while trying to get gain. {e}")
+            logger.error(f"Device Manager: Ran into error while trying to get gain. {e}")
             return {"Res_Value": None, "Error": "Ran into error while trying to get gain."}
 
     def set_gain(self, gain_value):
@@ -117,18 +170,30 @@ class Device_Manager:
             return {"Res_Value": False, "Error": f"Invalid value for integration time of {int_value}"}
 
     def get_int_time(self, not_used):
-        res = {"Res_Value": self.device.hardware.get_integration_time_ms(), "Error": None}
-        logger.info(f"Received integration time of {res['Res_Value']}")
-        return res
+        try:
+            res = {"Res_Value": self.device.hardware.get_integration_time_ms(), "Error": None}
+            logger.info(f"Device Manager: Received integration time of {res['Res_Value']}")
+            return res
+        except Exception as e:
+            logger.error(f"Device Manager: Ran into error while trying to get int time {e}")
+            return {"Res_Value": None, "Error": "Ran into error while trying to get int time"}
 
     def get_spectra(self, not_used):
-        self.device.acquire_data()
-        return {"Res_Value": self.device.acquire_data().spectrum, "Error": None}
+        try:
+            self.device.acquire_data()
+            return {"Res_Value": self.device.acquire_data().spectrum, "Error": None}
+        except Exception as e:
+            logger.error(f"Device Manager: Ran into error while trying to get spectra {e}")
+            return {"Res_Value": None, "Error": "Ran into error while trying to get spectra"}
 
     def get_roi(self, not_used):
-        start_roi = self.device.settings.eeprom.roi_horizontal_start
-        end_roi = self.device.settings.eeprom.roi_horizontal_end
-        return {"Res_Value": (start_roi, end_roi), "Error": None}
+        try:
+            start_roi = self.device.settings.eeprom.roi_horizontal_start
+            end_roi = self.device.settings.eeprom.roi_horizontal_end
+            return {"Res_Value": (start_roi, end_roi), "Error": None}
+        except Exception as e:
+            logger.error(f"Device Manager: Ran into error while trying to get roi {e}")
+            return {"Res_Value": None, "Error": "Ran into error while trying to get roi"}
 
     def set_roi(self, roi_values):
         try:
@@ -146,12 +211,20 @@ class Device_Manager:
             return {"Res_Value": False, "Error": f"Received invalid roi values of {roi_values}"}
 
     def set_laser(self, enabled):
-        if enabled == '1':
-            self.device.hardware.set_laser_enable(True)
-            return {"Res_Value": True, "Error": None}
-        else:
-            self.device.hardware.set_laser_enable(False)
-            return {"Res_Value": False, "Error": None}
+        try:
+            if enabled == '1':
+                self.device.hardware.set_laser_enable(True)
+                return {"Res_Value": True, "Error": None}
+            else:
+                self.device.hardware.set_laser_enable(False)
+                return {"Res_Value": False, "Error": None}
+        except Exception as e:
+            try:
+                self.device.hardware.set_laser_enable(False)
+            except:
+                pass
+            logger.error(f"Device Manager: Ran into error while trying to set laser {e}")
+            return {"Res_Value": None, "Error": "Ran into error while trying to set laser"}
 
     def set_laser_watchdog(self,timeout):
         try:
@@ -170,13 +243,29 @@ class Device_Manager:
             return {"Res_Value": False, "Error": f'Invalid tpye for raman delay time of {type(delay_time)}'}
 
     def get_laser_state(self, not_used):
-        return {"Res_Value": self.device.hardware.get_laser_enable(), "Error": None}
+        try:
+            return {"Res_Value": self.device.hardware.get_laser_enable(), "Error": None}
+        except Exception as e:
+            logger.error(f"Device Manager: Ran into error while trying to get laser state {e}")
+            return {"Res_Value": None, "Error": "Ran into error while trying to get laser state"}
 
     def get_watch_delay(self, not_used):
-        return {"Res_Value": self.device.hardware.get_laser_watchdog_sec(), "Error": None}
+        try:
+            return {"Res_Value": self.device.hardware.get_laser_watchdog_sec(), "Error": None}
+        except Exception as e:
+            logger.error(f"Device Manager: Ran into error while trying to get laser watchdog delay {e}")
+            return {"Res_Value": None, "Error": "Ran into error while trying to get laser watchdog delay"}
 
     def get_raman_delay(self, not_used):
-        return {"Res_Value": self.device.hardware.get_raman_delay_ms(), "Error": None}
+        try:
+            return {"Res_Value": self.device.hardware.get_raman_delay_ms(), "Error": None}
+        except Exception as e:
+            logger.error(f"Device Manager: Ran into error while trying to get raman delay {e}")
+            return {"Res_Value": None, "Error": "Ran into error while trying to get raman delay"}
 
     def get_raman_mode(self, not_used):
-        return {"Res_Value": self.device.hardware.get_raman_mode_enable_NOT_USED(), "Error": None}
+        try:
+            return {"Res_Value": self.device.hardware.get_raman_mode_enable_NOT_USED(), "Error": None}
+        except Exception as e:
+            logger.error(f"Device Manager: Ran into error while trying to get raman mode {e}")
+            return {"Res_Value": None, "Error": "Ran into error while trying to get raman mode"}

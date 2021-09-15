@@ -5,6 +5,13 @@ import logging
 import platform
 import threading
 from queue import PriorityQueue, Queue
+
+# adds dependencies to path so end user doesnt have to
+cwd = os.getcwd()
+sys.path.append(''.join([cwd,'/Bluetooth']))
+sys.path.append(''.join([cwd,'/Socket']))
+sys.path.append(''.join([cwd,'/../Wasatch.PY']))
+
 from mainBluetooth import *
 from deviceManager import *
 from socketManager import *

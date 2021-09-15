@@ -1,0 +1,12 @@
+[Unit]
+Description=My Script Service
+After=multi-user.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/python3 /home/pi/##########FILL WITH CORRECT PATH#######/RPi-Communication/gatewayController.py
+WorkingDirectory=/home/pi/#############FILL WITH CORREC PATH###############/RPi-Communication/
+
+[Install]
+WantedBy=multi-user.target
