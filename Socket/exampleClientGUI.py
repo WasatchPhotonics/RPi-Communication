@@ -98,7 +98,7 @@ class Application(tk.Frame):
 
     def fill_capture_frame(self):
         if self.is_mac:
-            self.capture_btn = tkm.Button(self.laser_frame,bg='#454545',fg='#f0f0f0',borderless=1)
+            self.capture_btn = tkm.Button(self.capture_frame,bg='#454545',fg='#f0f0f0',borderless=1)
         else:
             self.capture_btn = tk.Button(self.laser_frame,bg='#454545',fg='#f0f0f0')
         self.capture_btn.pack(fill=tk.X,padx=10,pady=10)
