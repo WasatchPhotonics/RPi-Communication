@@ -25,6 +25,7 @@ class Application(tk.Frame):
 
         self.active_x = []
         self.active_y = []
+        self.laser_status = 0
         self.command_q = Queue()
         self.session = None
         self.create_widgets()
@@ -64,13 +65,16 @@ class Application(tk.Frame):
         self.laser_frame = tk.Frame(self.control_frame,bd=2,bg='#212121')
         self.laser_frame.pack(side=tk.TOP,fill=tk.X,padx=5,pady=5)
 
+        self.capture_frame = tk.Frame(self.control_frame,bd=2,bg='#212121')
+        self.capture_frame.pack(side=tk.TOP,fill=tk.X,padx=5,pady=5)
+
         self.gen_cmd_frame = tk.Frame(self.control_frame,bd=2,bg='#212121')
         self.gen_cmd_frame.pack(fill=tk.X,padx=5,pady=5)
 
     def fill_int_widget(self):
         self.int_var = tk.DoubleVar(value=0)
         self.int_label = tk.Label(self.int_frame,text="Integration Time",bg='#212121',fg='#f0f0f0')
-        self.int_spin = tk.Spinbox(self.int_frame,textvariable=self.int_var,bg='#454545',fg='#f0f0f0',from_=0,to=15000,insertbackground='#f0f0f0')
+        self.int_spin = tk.Spinbox(self.int_frame,textvariable=self.int_var,bg='#454545',fg='#f0f0f0',from_=0,to=15000,insertbackground='#f0f0f0',command=self.set_int_time)
 
         self.int_label.pack(side=tk.TOP,fill=tk.X,padx=5)
         self.int_spin.pack(fill=tk.X,padx=5,pady=10)
@@ -78,7 +82,7 @@ class Application(tk.Frame):
     def fill_gain_widget(self):
         self.gain_var = tk.DoubleVar(value=0)
         self.gain_label = tk.Label(self.gain_frame,text="Gain",bg='#212121',fg='#f0f0f0')
-        self.gain_spin = tk.Spinbox(self.gain_frame,textvariable=self.gain_var,bg='#454545',fg='#f0f0f0',from_=0,to=15000,insertbackground='#f0f0f0')
+        self.gain_spin = tk.Spinbox(self.gain_frame,textvariable=self.gain_var,bg='#454545',fg='#f0f0f0',from_=0,to=15000,insertbackground='#f0f0f0',command=self.set_gain)
 
         self.gain_label.pack(fill=tk.X,padx=5)
         self.gain_spin.pack(fill=tk.X,padx=5,pady=10)
@@ -89,7 +93,17 @@ class Application(tk.Frame):
         else:
             self.laser_btn = tk.Button(self.laser_frame,bg='#454545',fg='#f0f0f0')
         self.laser_btn.pack(fill=tk.X,padx=10,pady=10)
-        self.laser_btn['text'] = u"\u2316 Toggle Laser"
+        self.laser_btn['text'] = u"\u263C Toggle Laser"
+        self.laser_btn['command'] = self.toggle_laser
+
+    def fill_capture_frame(self):
+        if self.is_mac:
+            self.capture_btn = tkm.Button(self.laser_frame,bg='#454545',fg='#f0f0f0',borderless=1)
+        else:
+            self.capture_btn = tk.Button(self.laser_frame,bg='#454545',fg='#f0f0f0')
+        self.capture_btn.pack(fill=tk.X,padx=10,pady=10)
+        self.capture_btn['text'] = u"\u223F Capture Spectra"
+        self.capture_btn['command'] = self.capture_spectra
 
     def fill_conn_ip_frame(self):
         self.ip_val_frame = tk.Frame(self.conn_ip_frame,bg='#212121')
@@ -162,6 +176,26 @@ class Application(tk.Frame):
         self.active_line = self.active_plot.plot(self.active_x,self.active_y)[0]
         self.canvas = FigureCanvasTkAgg(self.active_fig,master=self.display_center) 
 
+    def set_gain(self,*args):
+        self.perform_socket_comm('SET_GAIN',self.gain_spin.get())
+
+    def set_int_time(self, *args):
+        self.perform_socket_comm('SET_INT_TIME',self.int_spin.get())
+
+    def capture_spectra(self):
+        self.perform_socket_comm('GET_SPECTRA','0')
+
+    def toggle_laser(self):
+        if self.laser_status == 1:
+            self.laser_status = 0
+            self.perform_socket_comm('SET_LASER','0')
+            self.laser_btn.configure(bg='#454545')
+        else:
+            self.laser_status = 1
+            res = self.perform_socket_comm('SET_LASER','1')
+            if res:
+                self.laser_btn.configure(bg='red')
+
     def create_widgets(self):
         self.response_value = tk.StringVar()
         self.response_error = tk.StringVar()
@@ -171,6 +205,7 @@ class Application(tk.Frame):
         self.fill_gen_cmd_widget()
         self.fill_conn_ip_frame()
         self.fill_laser_widget()
+        self.fill_capture_frame()
         self.fill_gain_widget()
         self.create_graph_widget()
         
@@ -193,11 +228,12 @@ class Application(tk.Frame):
         address = self.ip_input.get()
         self.session = Session_Manager()
         conn_status = self.session.attempt_conn(address)
-        self.info_msg.set(f"Info: {conn_status}")
+        self.info_msg.set(f"{conn_status}")
         if "Error" in conn_status:
             self.session = None
         else:
             self.conn_btn.configure(bg='green')
+            self.perform_socket_comm('SET_LASER',0)
             int_time = self.perform_socket_comm('GET_INT_TIME',0)
             gain = self.perform_socket_comm('GET_GAIN',0)
             self.int_var.set(int_time)
