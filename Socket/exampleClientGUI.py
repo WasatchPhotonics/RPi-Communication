@@ -172,6 +172,8 @@ class Application(tk.Frame):
         self.ax.tick_params(axis='y', colors='#f0f0f0')
         self.ax.yaxis.label.set_color('#f0f0f0')
         self.ax.xaxis.label.set_color('#f0f0f0')
+        self.ax.set_ylabel("Counts")
+        self.ax.set_xlabel("Pixels")
         self.ax.set_facecolor('#000')
         self.active_line = self.active_plot.plot(self.active_x,self.active_y)[0]
         self.canvas = FigureCanvasTkAgg(self.active_fig,master=self.display_center) 
