@@ -79,7 +79,8 @@ class Gateway_Manager:
 
     def start(self):
        logger.debug("Running comms.")
-       input()
+       while True:
+           time.sleep(10000)
 
     def manager_checker(self):
         """Runs an infinite loop to see if the comm method has indicate the interface is down
