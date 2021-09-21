@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import axios from "axios"
-import { LineChart, Line, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { LineChart, Line, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Label } from 'recharts';
 import '../App.css';
 
-const baseURL = "http://127.0.0.1:8000"
+const baseURL = "http://192.168.1.30:8000"
 
 function SpectraChart() {
   const [spectraValues, setSpectraValues] = useState();
@@ -27,13 +27,21 @@ function SpectraChart() {
   }
 
   return (
-    <div>
-      <LineChart width="100%" height="100%" data={spectraValues}>
-        <Line type="monotone" stroke="#8884d8" dataKey="count"/>
-        <CartesianGrid stroke="#fff"/>
-        <XAxis dataKey="pixel"/>
-        <YAxis />
-      </LineChart>
+      <div>
+          <div className="graphContainer">
+            <ResponsiveContainer width="90%" aspect={1.5} className="graph">
+            <LineChart data={spectraValues} margin={{ top: 50, right: 50, left: 20, bottom: 20 }}>
+                      <Line type="monotone" stroke="#fff" dataKey="count" dot={false}/>
+                      <CartesianGrid horizontal={false} vertical={false}/>
+                      <XAxis axisLine={true}>
+                      <Label value="Pixels" offset={-10} position="insideBottom" fill='#f0f0f0'/>
+                  </XAxis>
+                      <YAxis axisLine={true}>
+                          <Label value="Count" offset={-10} position="insideLeft" angle={-90} fill='#f0f0f0'/>
+                  </YAxis>
+          </LineChart>
+          </ResponsiveContainer>
+          </div>
       <button onClick={() => getSpectra()}>Get Spectra</button>
     </div>
   );
