@@ -17,26 +17,12 @@ from deviceManager import *
 from socketManager import *
 
 VERSION_NUM = '1.0.5'
-
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
 
-formatter = logging.Formatter('%(asctime)s-%(name)s-%(levelname)s-%(message)s')
-
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-ch.setFormatter(formatter)
-
-pathname = os.getcwd()
-pathname += "/pi-gateway.log"
-fh = logging.FileHandler(pathname, mode='w', encoding='utf-8')
-fh.setFormatter(formatter)
-
-logger.addHandler(fh)
-logger.addHandler(ch)
 
 class Gateway_Manager:
     def __init__(self):
+       logger.info(f"Starting gateway on {platform.system()}, version number: {VERSION_NUM}")
        logger.debug("starting gateway communication methods")
        self.queues = {
                'ble': {'send': PriorityQueue(), 'recv': PriorityQueue()},
@@ -62,15 +48,23 @@ class Gateway_Manager:
                                             self.shared_msg_handler,
                                             self.interface_restart_msg_q
                                             )
+       self.lo_sock_comms = Socket_Manager('lo',
+                                            self.dev_manager, 
+                                            self.queues['socket'], 
+                                            self.shared_msg_handler,
+                                            self.interface_restart_msg_q
+                                            )
        self.comm_class = {
                "wlan0": Socket_Manager,
                "eth0": Socket_Manager,
                "ble": BLE_Communicator,
+               "lo": Socket_Manager,
                }
        self.comm_instance = {
                "wlan0": self.wifi_sock_comms,
                "eth0": self.eth_sock_comms,
                "ble": self.ble_comms,
+               "lo": self.lo_sock_comms,
                }
        #reconn_status is used to indicate if an attempt is underway to setup the interface again
        #without this, it keeps trying to setup the interface, resulting in many unneeded instances
@@ -114,7 +108,22 @@ class Gateway_Manager:
                     obtained_response = True
         return response
 
+if __name__ == "__main__":
+    logger.setLevel(logging.DEBUG)
 
-logger.info(f"Starting gateway on {platform.system()}, version number: {VERSION_NUM}")
-gateway = Gateway_Manager()
-gateway.start()
+    formatter = logging.Formatter('%(asctime)s-%(name)s-%(levelname)s-%(message)s')
+
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    ch.setFormatter(formatter)
+
+    pathname = os.getcwd()
+    pathname += "/pi-gateway.log"
+    fh = logging.FileHandler(pathname, mode='w', encoding='utf-8')
+    fh.setFormatter(formatter)
+
+    logger.addHandler(fh)
+    logger.addHandler(ch)
+
+    gateway = Gateway_Manager()
+    gateway.start()
