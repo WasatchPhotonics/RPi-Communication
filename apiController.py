@@ -36,7 +36,7 @@ app = FastAPI()
 
 wlan = ni.ifaddresses('wlan0')[ni.AF_INET][0]['addr']
 origins = [
-        f"http://{wlan}:3000"
+        "http://localhost:3000"
     ]
 app.add_middleware(
     CORSMiddleware,
