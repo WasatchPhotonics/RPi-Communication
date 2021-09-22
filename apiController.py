@@ -8,6 +8,8 @@ import logging
 import platform
 import threading
 import netifaces as ni
+from typing import Optional
+from pydantic import BaseModel
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -32,11 +34,18 @@ fh.setFormatter(formatter)
 logger.addHandler(fh)
 logger.addHandler(ch)
 
+class SpecSettings(BaseModel):
+    int_time: Optional[float] = None
+    gain: Optional[float] = None
+    laser_state: Optional[int] = None
+    roi: Optional[str] = None
+
 app = FastAPI()
 
 wlan = ni.ifaddresses('wlan0')[ni.AF_INET][0]['addr']
 origins = [
-        "http://localhost:3000"
+        "http://localhost:3000",
+        f"{wlan}:3000"
     ]
 app.add_middleware(
     CORSMiddleware,
@@ -93,6 +102,16 @@ async def get_int(request: Request):
     int_time = communicate_device_msg(msg_id,'GET_INT_TIME',0)
     return int_time
 
+@app.post("/int")
+async def set_int(request: Request, spec_settings: SpecSettings):
+    global msg_num
+    ip = request.client.host
+    msg_id = str(request.client.host) + f":{msg_num}"
+    msg_num += 1
+    msg_num %= 6000
+    communicate_device_msg(msg_id,'SET_INT_TIME',spec_settings.int_time)
+    return spec_settings
+
 @app.get("/eeprom")
 async def get_eeprom(request: Request):
     global msg_num
@@ -104,7 +123,7 @@ async def get_eeprom(request: Request):
     return eeprom
 
 @app.get("/has_battery")
-async def get_eeprom(request: Request):
+async def has_bat(request: Request):
     global msg_num
     ip = request.client.host
     msg_id = str(request.client.host) + f":{msg_num}"
@@ -114,7 +133,7 @@ async def get_eeprom(request: Request):
     return has_bat
 
 @app.get("/battery")
-async def get_eeprom(request: Request):
+async def get_bat(request: Request):
     global msg_num
     ip = request.client.host
     msg_id = str(request.client.host) + f":{msg_num}"
@@ -124,7 +143,7 @@ async def get_eeprom(request: Request):
     return bat_per
 
 @app.get("/gain")
-async def get_eeprom(request: Request):
+async def get_gain(request: Request):
     global msg_num
     ip = request.client.host
     msg_id = str(request.client.host) + f":{msg_num}"
@@ -133,8 +152,18 @@ async def get_eeprom(request: Request):
     get_gain = communicate_device_msg(msg_id,'GET_GAIN',0)
     return get_gain
 
+@app.post("/gain")
+async def set_gain(request: Request, spec_settings: SpecSettings):
+    global msg_num
+    ip = request.client.host
+    msg_id = str(request.client.host) + f":{msg_num}"
+    msg_num += 1
+    msg_num %= 6000
+    communicate_device_msg(msg_id,'SET_GAIN',spec_settings.gain)
+    return spec_settings
+
 @app.get("/spectra")
-async def get_eeprom(request: Request):
+async def get_spectra(request: Request):
     global msg_num
     ip = request.client.host
     msg_id = str(request.client.host) + f":{msg_num}"
@@ -144,7 +173,7 @@ async def get_eeprom(request: Request):
     return spectra
 
 @app.get("/roi")
-async def get_eeprom(request: Request):
+async def get_roi(request: Request):
     global msg_num
     ip = request.client.host
     msg_id = str(request.client.host) + f":{msg_num}"
@@ -154,7 +183,7 @@ async def get_eeprom(request: Request):
     return roi
 
 @app.get("/laser_state")
-async def get_eeprom(request: Request):
+async def get_laser(request: Request):
     global msg_num
     ip = request.client.host
     msg_id = str(request.client.host) + f":{msg_num}"
@@ -163,8 +192,18 @@ async def get_eeprom(request: Request):
     laser_state = communicate_device_msg(msg_id,'GET_LASER_STATE',0)
     return laser_state
 
+@app.post("/laser_state")
+async def set_laser(request: Request, spec_settings: SpecSettings):
+    global msg_num
+    ip = request.client.host
+    msg_id = str(request.client.host) + f":{msg_num}"
+    msg_num += 1
+    msg_num %= 6000
+    communicate_device_msg(msg_id,'SET_LASER',spec_settings.laser_state)
+    return spec_settings
+
 @app.get("/watchdog_delay")
-async def get_eeprom(request: Request):
+async def get_watchdog(request: Request):
     global msg_num
     ip = request.client.host
     msg_id = str(request.client.host) + f":{msg_num}"
@@ -174,7 +213,7 @@ async def get_eeprom(request: Request):
     return watchdog
 
 @app.get("/raman_delay")
-async def get_eeprom(request: Request):
+async def get_raman_delay(request: Request):
     global msg_num
     ip = request.client.host
     msg_id = str(request.client.host) + f":{msg_num}"
@@ -184,7 +223,7 @@ async def get_eeprom(request: Request):
     return raman_delay
 
 @app.get("/raman_mode")
-async def get_eeprom(request: Request):
+async def get_raman_mode(request: Request):
     global msg_num
     ip = request.client.host
     msg_id = str(request.client.host) + f":{msg_num}"
