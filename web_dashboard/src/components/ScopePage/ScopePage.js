@@ -5,10 +5,12 @@ import '../../App.css';
 
 function ScopePage() {
     return (
-        <Marquee />
-        <div className="pageWindow">
-            <SpectraChart />
-            <ControlWidget />
+        <div>
+            <Marquee />
+            <div className="pageWindow">
+                <SpectraChart />
+                <ControlWidget />
+            </div>
         </div>
     );
 }
