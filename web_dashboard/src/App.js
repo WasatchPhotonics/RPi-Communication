@@ -1,14 +1,28 @@
+import React, { useState, useEffect } from 'react'
 import ScopePage from './components/ScopePage/ScopePage'
-import Marquee from './components/Marquee'
+import ControlWidget from './components/ControlWidget/ControlWidget'
 import Header from './components/Header'
 import './App.css';
+import HardwarePage from './components/HardwarePage/HardwarePage';
 
 function App() {
+    const [display, setDisplay] = useState("scope");
+    var displayComponent;
+
+    if (display == "scope") {
+        displayComponent = <ScopePage />
+    }
+    else if (display == "hardware") {
+        displayComponent = <HardwarePage />
+    }
+
   return (
       <div className="App">
-          <Header />
-          <Marquee />
-          <ScopePage />
+          <Header setDisplay={ setDisplay }/>
+          <div className="appWindow">
+              {displayComponent}
+              <ControlWidget />
+          </div>
     </div>
   );
 }

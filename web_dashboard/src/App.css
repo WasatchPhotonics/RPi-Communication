@@ -47,12 +47,9 @@
 .controlWidget {
     flex-grow: 1;
     padding: 5px;
-    margin: 5px;
-    border-width: 2px;
-    border-color: #000;
-    border-style: solid;
-    box-shadow: 0px 5px 16px -2px #696969;
     display:flex;
+    height: 100%;
+    max-width: 229px;
     flex-direction: column;
     align-content: flex-start;
 }
@@ -68,12 +65,25 @@
     align-items: center;
 }
 
+.appWindow {
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+}
+.displayWindow {
+    flex-grow: 4;
+}
+
 .graphWidget {
     flex-grow: 3;
 }
 
+.eepromInput {
+    display: flex;
+    margin: 5px;
+}
+
 .container {
-    text-align: center;
     margin: 0px 5px 0px 5px;
     padding: 5px;
     border-radius: 5px;
@@ -108,7 +118,6 @@ input {
     border-width: 2px;
     border-color: #000;
     border-style: solid;
-    margin-left: 20%;
     padding: 10px 5px 10px 5px;
     box-shadow: 0px 5px 16px -2px #696969;
     border-radius: 5px;
