@@ -2,12 +2,14 @@ import SpectraChart from './Chart';
 import Marquee from './Marquee'
 import '../../App.css';
 
-function ScopePage() {
+function ScopePage(props) {
+
+
     return (
         <div className="displayWindow">
             <Marquee />
             <div className="pageWindow">
-                <SpectraChart />
+                <SpectraChart spectraValues={props.spectraValues} spectraStats={props.spectraStats}/>
             </div>
         </div>
     );

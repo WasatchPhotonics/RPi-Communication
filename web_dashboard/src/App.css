@@ -76,6 +76,7 @@
 
 .graphWidget {
     flex-grow: 3;
+    height: 90%;
 }
 
 .eepromInput {
@@ -111,6 +112,7 @@
 
 input {
     background-color: #a0a0a0;
+    color: #fff;
 }
 
 .graphContainer {

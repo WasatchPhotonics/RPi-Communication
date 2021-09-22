@@ -2,11 +2,11 @@ import React from 'react'
 import DetectorControlWidget from './DetectorControlWidget'
 import LaserControlWidget from './LaserControlWidget'
 
-function ControlWidget() {
+function ControlWidget(props) {
 
     return (
         <div className="controlWidget">
-            <DetectorControlWidget />
+            <DetectorControlWidget getSpectra={props.getSpectra}/>
             <LaserControlWidget />
         </div>
         )

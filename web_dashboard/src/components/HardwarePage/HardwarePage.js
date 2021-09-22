@@ -25,7 +25,6 @@ function parseEEPROM(eeprom) {
     newState["has_battery"] = page0[37]
     newState["has_laser"] = page0[38]
     let featureMask = parseValue(page0.slice(39,41))
-    console.log(featureMask & 1, page0.slice(39,41))
     newState["invert_x_axis"] = Boolean(featureMask & 0x0001)
     newState["bin_2x2"] = Boolean(featureMask & 0x0002)
     newState["gen15"] = Boolean(featureMask & 0x0004)
@@ -47,6 +46,7 @@ function parseEEPROM(eeprom) {
 }
 
 function HardwarePage() {
+    const [obtainedEEPROM, setObtainedEEPROM] = useState(false)
     const [eepromFields, setEEPROMFields] = useState({
         "serial_number": "xx",
         "model": "xx",
@@ -82,10 +82,16 @@ function HardwarePage() {
         })
     }
 
+    useEffect(() => {
+        if (!obtainedEEPROM) {
+            getEEPROM()
+            setObtainedEEPROM(true)
+        }
+    })
+
     return (
         <div className="displayWindow">
             <div className="container">
-                <button onClick={getEEPROM}>Get EEPROM</button>
                 <span style={{textAlign: "left"}}>EEPROM Contents</span>
                 <EEPROM0 eeprom={eepromFields} setEEPROM={setEEPROMFields}/>
             </div>

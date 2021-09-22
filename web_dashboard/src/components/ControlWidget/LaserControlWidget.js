@@ -7,6 +7,18 @@ const baseURL = "http://192.168.1.30:8000"
 
 function LaserControlWidget() {
     const [laserPower, setLaserPower] = useState("10%")
+    const [laserState, setLaserState] = useState(false)
+
+    const alterLaserState = () => {
+        let newState = !laserState
+        setLaserState(newState)
+        let cmdURL = baseURL + '/laser_state'
+        axios.post(cmdURL, { laser_state: newState }).then((response) => {
+            console.log(response)
+        }).catch((error) => {
+            console.log(error)
+        });
+    }
 
     const arrowAlterControl = (direction) => {
     }
@@ -21,7 +33,7 @@ function LaserControlWidget() {
             <span className="controlTitles">Laser Control</span>
             <div className="controlWidgetContainer">
                 <div className="controlInputs">
-                    <button><span>&#9211; Toggle Laser</span></button>
+                    <button onClick={alterLaserState} style={laserState ? {backgroundColor:"red",borderRadius:"5px"} : {}}><span>&#9211; Toggle Laser</span></button>
                     <span>
                         <button onClick={() => arrowAlterControl("int", 1)}><span>&#9650;</span></button>
                         <button onClick={() => arrowAlterControl("int", -1)}><span>&#9660;</span></button>
