@@ -199,7 +199,7 @@ async def set_laser(request: Request, spec_settings: SpecSettings):
     msg_id = str(request.client.host) + f":{msg_num}"
     msg_num += 1
     msg_num %= 6000
-    communicate_device_msg(msg_id,'SET_LASER',spec_settings.laser_state)
+    communicate_device_msg(msg_id,'SET_LASER',str(spec_settings.laser_state))
     return spec_settings
 
 @app.get("/watchdog_delay")
