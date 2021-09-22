@@ -1,13 +1,14 @@
-import SpectraChart from './components/Chart';
+import ScopePage from './components/ScopePage/ScopePage'
+import Marquee from './components/Marquee'
+import Header from './components/Header'
 import './App.css';
 
 function App() {
   return (
-    <div className="App">
-          <div className="pageWindow">
-            <SpectraChart />
-            <ControlWidget />
-          </div>
+      <div className="App">
+          <Header />
+          <Marquee />
+          <ScopePage />
     </div>
   );
 }

@@ -1,6 +1,8 @@
 .App {
-  text-align: center;
   margin: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .App-logo {
@@ -28,18 +30,85 @@
   color: #61dafb;
 }
 
+.pageWindow {
+    display: flex;
+    height: 100%;
+    flex-direction: row;
+    align-content: center;
+    justify-content: stretch;
+}
+
+.controlTitles {
+    text-align: left;
+    margin: 5px;
+    color: #fff;
+}
+
+.controlWidget {
+    flex-grow: 1;
+    padding: 5px;
+    margin: 5px;
+    border-width: 2px;
+    border-color: #000;
+    border-style: solid;
+    box-shadow: 0px 5px 16px -2px #696969;
+    display:flex;
+    flex-direction: column;
+    align-content: flex-start;
+}
+
 .graph {
     margin: 0 auto;
     padding-right: 9%;
     background-color: black;
 }
 
-.graphContainer {
+.headerLayout {
+    display: flex;
+    align-items: center;
+}
+
+.graphWidget {
+    flex-grow: 3;
+}
+
+.container {
+    text-align: center;
+    margin: 0px 5px 0px 5px;
+    padding: 5px;
+    border-radius: 5px;
     border-width: 2px;
     border-color: #000;
     border-style: solid;
-    margin-right: 25%;
-    margin-left: 25%;
+    color: #fff;
+}
+
+.controlWidgetContainer {
+    text-align: center;
+    margin: 0px 5px 0px 5px;
+    padding: 5px;
+    border-radius: 5px;
+    border-width: 2px;
+    border-color: #000;
+    border-style: solid;
+    color: #fff;
+}
+
+.controlInputs {
+    display: flex;
+    flex-direction: column;
+}
+
+input {
+    background-color: #a0a0a0;
+}
+
+.graphContainer {
+    margin: 5px;
+    border-width: 2px;
+    border-color: #000;
+    border-style: solid;
+    margin-left: 20%;
     padding: 10px 5px 10px 5px;
     box-shadow: 0px 5px 16px -2px #696969;
     border-radius: 5px;

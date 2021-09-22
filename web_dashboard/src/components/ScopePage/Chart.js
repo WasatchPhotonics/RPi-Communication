@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import axios from "axios"
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Label } from 'recharts';
-import '../App.css';
+import '../../App.css';
 
 const baseURL = "http://192.168.1.30:8000"
 
@@ -27,11 +27,11 @@ function SpectraChart() {
   }
 
   return (
-      <div>
+      <div className="graphWidget">
           <div className="graphContainer">
             <ResponsiveContainer width="90%" aspect={1.5} className="graph">
             <LineChart data={spectraValues} margin={{ top: 50, right: 50, left: 20, bottom: 20 }}>
-                      <Line type="monotone" stroke="#fff" dataKey="count" dot={false}/>
+                      <Line type="monotone" stroke="#fff" dataKey="count" dot={false} isAnimationActive={false}/>
                       <CartesianGrid horizontal={false} vertical={false}/>
                       <XAxis axisLine={true}>
                       <Label value="Pixels" offset={-10} position="insideBottom" fill='#f0f0f0'/>
