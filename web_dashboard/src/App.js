@@ -1,15 +1,14 @@
-import SpectraChart from './components/Chart';
+import ScopePage from './components/ScopePage/ScopePage'
+import Marquee from './components/Marquee'
+import Header from './components/Header'
 import './App.css';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-      </header>
-        <SpectraChart />
+      <div className="App">
+          <Header />
+          <Marquee />
+          <ScopePage />
     </div>
   );
 }
