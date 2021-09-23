@@ -1,18 +1,15 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import axios from "axios"
 import '../../App.css';
 
-
-const baseURL = "http://192.168.1.30:8000"
-
-function LaserControlWidget() {
+function LaserControlWidget(props) {
     const [laserPower, setLaserPower] = useState("10%")
     const [laserState, setLaserState] = useState(false)
 
     const alterLaserState = () => {
         let newState = !laserState
         setLaserState(newState)
-        let cmdURL = baseURL + '/laser_state'
+        let cmdURL = props.baseURL + '/laser_state'
         axios.post(cmdURL, { laser_state: newState }).then((response) => {
             console.log(response)
         }).catch((error) => {
@@ -34,11 +31,11 @@ function LaserControlWidget() {
             <div className="controlWidgetContainer">
                 <div className="controlInputs">
                     <button onClick={alterLaserState} style={laserState ? {backgroundColor:"red",borderRadius:"5px"} : {}}><span>&#9211; Toggle Laser</span></button>
-                    <span>
+                    {/*<span>
                         <button onClick={() => arrowAlterControl("int", 1)}><span>&#9650;</span></button>
                         <button onClick={() => arrowAlterControl("int", -1)}><span>&#9660;</span></button>
                     </span>
-                    <input value={laserPower} style={{ textAlign: 'center', color: '#fff' }} onChange={(e) => alterControl(e.target.value)}></input>
+                    <input value={laserPower} style={{ textAlign: 'center', color: '#fff' }} onChange={(e) => alterControl(e.target.value)}></input>*/}
                 </div>
             </div>
         </div>

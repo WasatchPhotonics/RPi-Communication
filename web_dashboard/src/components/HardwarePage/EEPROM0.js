@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import '../../App.css';
 
 function EEPROM0(props) {
     const [authState, setauthState] = useState(true);
 
     return (
-            <div>
+        <div stlye={{marginBottom:"10px"}}>
                 <div className="container">
                     EEPROM Page 0
                     <div className="eepromInput">

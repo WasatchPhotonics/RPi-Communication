@@ -1,9 +1,7 @@
-import React, { useState, useEffect } from 'react'
-import axios from "axios"
+import React from 'react'
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Label } from 'recharts';
 import '../../App.css';
 
-const baseURL = "http://192.168.1.30:8000"
 
 function SpectraChart(props) {
 
@@ -13,11 +11,11 @@ function SpectraChart(props) {
           <div className="graphContainer">
             <ResponsiveContainer width="90%" aspect={2} className="graph">
             <LineChart data={props.spectraValues} margin={{ top: 50, right: 50, left: 20, bottom: 20 }}>
-                      <Line type="monotone" stroke="#fff" dataKey="count" dot={false} isAnimationActive={false}/>
+                      <Line type="monotone" stroke="#fff" dataKey="count" dot={props.markers} isAnimationActive={false}/>
                       <CartesianGrid horizontal={false} vertical={false}/>
-                      <XAxis axisLine={true} interval="preserveStartEnd">
+                      <XAxis axisLine={true} interval="preserveStartEnd" dataKey={props.xUnits} reversed={props.reverseAxis}>
                       <Label value="Pixels" offset={-10} position="insideBottom" fill='#f0f0f0'/>
-                  </XAxis>
+                      </XAxis>
                       <YAxis axisLine={true}>
                           <Label value="Count" offset={-10} position="insideLeft" angle={-90} fill='#f0f0f0'/>
                   </YAxis>
