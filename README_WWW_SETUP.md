@@ -13,19 +13,19 @@ git clone https://github.com/WasatchPhotonics/Wasatch.PY.git
 4. Install the python dependencies using pip
 
 ```
-$ pip3 netifaces
+pip3 netifaces
 ```
 ```
-$ pip3 pybleno
+pip3 pybleno
 ```
 ```
-$ pip3 uvicorn
+pip3 uvicorn
 ```
 ```
-$ pip3 fastapi
+pip3 fastapi
 ```
 ```
-$ pip3 python-dotenv
+pip3 python-dotenv
 ```
     
 6. Follow the [bleno prerequisites](https://github.com/noble/bleno#prerequisites) to setup the raspberry pi for using BLE
