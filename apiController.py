@@ -9,13 +9,15 @@ import platform
 import threading
 import netifaces as ni
 from typing import Optional
+from dotenv import load_dotenv
 from pydantic import BaseModel
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from gatewayController import Gateway_Manager
 
-PORT = 8181
+
+load_dotenv()
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -34,6 +36,20 @@ fh.setFormatter(formatter)
 logger.addHandler(fh)
 logger.addHandler(ch)
 
+try:
+    PORT = int(os.getenv('PORT'))
+    WWW_PORT = int(os.getenv('WWW_PORT'))
+except:
+    PORT = None
+    WWW_PORT = None
+DOMAIN = os.getenv('DOMAIN')
+SSL_KEY = os.getenv('SSL_KEY')
+SSL_CERT = os.getenv('SSL_CERT')
+if PORT is None:
+    PORT = 8181
+if WWW_PORT is None:
+    WWW_PORT = 8000
+
 class SpecSettings(BaseModel):
     int_time: Optional[float] = None
     gain: Optional[float] = None
@@ -44,8 +60,11 @@ app = FastAPI()
 
 wlan = ni.ifaddresses('wlan0')[ni.AF_INET][0]['addr']
 origins = [
-        "http://localhost:3000",
-        f"{wlan}:3000"
+        f"http://192.168.1.30:8000",
+        f"http://192.168.1.6",
+        f"https://192.168.1.6",
+        f"http://{DOMAIN}",
+        f"https://{DOMAIN}",
     ]
 app.add_middleware(
     CORSMiddleware,
@@ -166,6 +185,10 @@ async def set_gain(request: Request, spec_settings: SpecSettings):
 async def get_spectra(request: Request):
     global msg_num
     ip = request.client.host
+    port = request.url.port
+    path = request.url.path
+    headers = request.headers
+    logger.info(f"request comes from {ip} on port {port} from path {path} with headers {headers}")
     msg_id = str(request.client.host) + f":{msg_num}"
     msg_num += 1
     msg_num %= 6000
@@ -233,4 +256,9 @@ async def get_raman_mode(request: Request):
     return raman_mode
 
 if __name__ == "__main__":
-    uvicorn.run(app, host=["127.0.0.1",wlan], port=8000, log_level="info")
+    uvicorn.run(app, 
+            host=["127.0.0.1",wlan], 
+            port=WWW_PORT, 
+            log_level="info",
+            ssl_keyfile=SSL_KEY,
+            ssl_certfile=SSL_CERT)
