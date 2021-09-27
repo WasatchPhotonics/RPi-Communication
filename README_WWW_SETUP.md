@@ -50,6 +50,7 @@ The gateway should now be running. Use Enlighten Mobile or one of the exampleCli
 npm run build
 ```
 if it says any dependencies are missing install those dependencies
+
 2. Move the build to your server /www directory or to create a simple server use [serve](https://create-react-app.dev/docs/deployment/) to host the page using the command
 ```
 npm install -g serve
