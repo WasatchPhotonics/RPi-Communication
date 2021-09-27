@@ -66,7 +66,7 @@ If this does not resolve the issue, the best method is to turn off the pi. Disco
 
 Run the service:
 
-### Non-web page
+### Non-Web Page
     $ sudo python3 -u gatewayController.py
     
 ### Web Page    
