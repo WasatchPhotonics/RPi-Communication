@@ -119,6 +119,11 @@ input {
     color: #fff;
 }
 
+.helpButton {
+    position: absolute;
+    right: 20px;
+}
+
 .graphContainer {
     margin: 5px;
     border-width: 2px;

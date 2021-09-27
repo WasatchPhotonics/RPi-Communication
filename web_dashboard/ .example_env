@@ -5,4 +5,4 @@
 #FOR THIS YOU MUST PICK HTTTP OR HTTPS BASED ON WHAT YOU ARE USING
 
 REACT_APP_PORT=8000
-REACT_APP_DOMAIN=https://mco.wasatchphotonics.com
+REACT_APP_DOMAIN=https://your.domain.com
