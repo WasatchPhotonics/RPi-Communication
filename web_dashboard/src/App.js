@@ -151,6 +151,9 @@ function App() {
             console.log(response)
             let newEEPROM = parseEEPROM(response.data.Value)
             setEEPROMFields(newEEPROM)
+        }).catch((error) => {
+            console.log(error)
+            eepromFields["model"] = "ERROR IN GETTING EEPROM"
         })
     }
 
@@ -161,10 +164,11 @@ function App() {
         }
     })
 
-    const baseURL = "https://mco.wasatchphotonics.com:8000"
+    const baseURL = `${process.env.REACT_APP_DOMAIN}:${process.env.REACT_APP_PORT}`
 
     const getSpectra = () => {
-        console.log('performing axios call')
+        console.log("performing call ")
+        console.log(baseURL)
         let spectraUrl = baseURL + '/spectra'
         let max = 0
         let min = Infinity
@@ -192,6 +196,8 @@ function App() {
                 setSpectraValues(data);
                 setSpectraStats({"max": max, "min": min, "mean": mean})
             }
+        }).catch((error) => {
+            console.log(error);
         })
     }
 
