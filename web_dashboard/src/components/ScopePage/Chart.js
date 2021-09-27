@@ -1,10 +1,26 @@
 import React from 'react'
-import { LineChart, Line, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Label } from 'recharts';
+import { LineChart, Line, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Label, Tooltip } from 'recharts';
 import '../../App.css';
 
 
 function SpectraChart(props) {
 
+    const xAxisLabels = {"pixel":"Pixels", "wavelength":"Wavelength (nm)", "wavenumber": "Wavenumber (cm\u207B\u00B9)"}
+
+    // The default tooltip was only showing the x axis. A custom tooltip solved this
+
+    const CustomTooltip = ({ active, payload, label }) => {
+        if (active && payload) {
+            return (
+                <div className="tooltip">
+                    <p>x: {label} </p>
+                    <p>y: {payload[0].value} </p>
+                </div>
+            );
+        }
+
+        return null;
+    };
 
   return (
       <div className="graphWidget">
@@ -14,11 +30,12 @@ function SpectraChart(props) {
                       <Line type="monotone" stroke="#fff" dataKey="count" dot={props.markers} isAnimationActive={false}/>
                       <CartesianGrid horizontal={false} vertical={false}/>
                       <XAxis axisLine={true} interval="preserveStartEnd" dataKey={props.xUnits} reversed={props.reverseAxis}>
-                      <Label value="Pixels" offset={-10} position="insideBottom" fill='#f0f0f0'/>
+                          <Label value={xAxisLabels[props.xUnits]} offset={-10} position="insideBottom" fill='#f0f0f0'/>
                       </XAxis>
-                      <YAxis axisLine={true}>
+                      <YAxis axisLine={true} dataKey="count">
                           <Label value="Count" offset={-10} position="insideLeft" angle={-90} fill='#f0f0f0'/>
                   </YAxis>
+                      <Tooltip content={<CustomTooltip />}/>
             </LineChart>
             </ResponsiveContainer>
           </div>

@@ -115,6 +115,10 @@ input {
     color: #fff;
 }
 
+.tooltip {
+    color: #fff;
+}
+
 .graphContainer {
     margin: 5px;
     border-width: 2px;

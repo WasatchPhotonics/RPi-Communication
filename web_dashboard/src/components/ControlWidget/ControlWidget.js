@@ -15,7 +15,8 @@ function ControlWidget(props) {
                 xUnits={props.xUnits}
                 setXUnits={props.setXUnits}
                 reverseAxis={props.reverseAxis}
-                setReverseAxis={props.setReverseAxis} />
+                setReverseAxis={props.setReverseAxis}
+                hasLaser={props.hasLaser}/>
         </div>
         )
 }

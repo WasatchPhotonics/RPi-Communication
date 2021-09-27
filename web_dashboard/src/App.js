@@ -161,7 +161,7 @@ function App() {
         }
     })
 
-    const baseURL = "http://192.168.1.30:8000"
+    const baseURL = "https://mco.wasatchphotonics.com:8000"
 
     const getSpectra = () => {
         console.log('performing axios call')
@@ -173,15 +173,17 @@ function App() {
             console.log(response)
             if (response.data.Error == null && response.data.Value != null) {
                 let data = new Array(response.data.Value.length).fill(0);
-                let i = 1;
+                var i = 1;
+                var nm = 0
+                var waveNum = 0
                 response.data.Value.forEach(element => {
                     if (element > max) { max = element }
                     if (element < min) { min = element }
-                    let nm = eepromFields["wavelength_coeffs[0]"] + 
+                    nm = eepromFields["wavelength_coeffs[0]"] + 
                         eepromFields["wavelength_coeffs[1]"] * i + 
                         eepromFields["wavelength_coeffs[2]"] * i * i +
                         eepromFields["wavelength_coeffs[3]"] * i * i * i
-                    let waveNum = (1e7 / eepromFields["excitation_nm_float"]) - (1e7 / nm);
+                    waveNum = (1e7 / eepromFields["excitation_nm_float"]) - (1e7 / nm);
                     mean += element
                     data[i] = { "pixel": i, "count": element, "wavelength": nm.toFixed(2), "wavenumber": waveNum.toFixed(2)}
                     i += 1;
@@ -224,7 +226,8 @@ function App() {
                   xUnits={xUnits}
                   setXUnits={setXUnits}
                   reverseAxis={reverseAxis}
-                  setReverseAxis={setReverseAxis}/>
+                  setReverseAxis={setReverseAxis}
+                  hasLaser={eepromFields["has_laser"]}/>
           </div>
     </div>
   );

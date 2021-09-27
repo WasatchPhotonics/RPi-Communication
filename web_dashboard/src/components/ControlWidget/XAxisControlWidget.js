@@ -10,9 +10,9 @@ function XAxisControlWidget(props) {
             <span className="controlTitles">X Axis</span>
             <div className="controlWidgetContainer">
                 <select onChange={(e) => props.setXUnits(e.target.value)}>
-                    <option value="pixel">Pixels</option>
-                    <option value="wavelength">Wavelength</option>
-                    <option value="wavenumber">Wavenumber</option>
+                    <option value="pixel">pixel</option>
+                    <option value="wavelength">wavelength</option>
+                    <option value="wavenumber" hidden={!props.hasLaser}>wavenumber</option>
                 </select>
                 <div className="controlInputs">
                     <div style={{display:"flex"}}>
