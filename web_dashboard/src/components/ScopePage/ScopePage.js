@@ -9,7 +9,11 @@ function ScopePage(props) {
         <div className="displayWindow">
             <Marquee />
             <div className="pageWindow">
-                <SpectraChart spectraValues={props.spectraValues} spectraStats={props.spectraStats}/>
+                <SpectraChart spectraValues={props.spectraValues}
+                    spectraStats={props.spectraStats}
+                    xUnits={props.xUnits}
+                    markers={props.markers}
+                    reverseAxis={props.reverseAxis}/>
             </div>
         </div>
     );
