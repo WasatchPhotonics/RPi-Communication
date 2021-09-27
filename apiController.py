@@ -60,12 +60,13 @@ app = FastAPI()
 
 wlan = ni.ifaddresses('wlan0')[ni.AF_INET][0]['addr']
 origins = [
-        f"http://192.168.1.30:8000",
-        f"http://192.168.1.6",
-        f"https://192.168.1.6",
-        f"http://{DOMAIN}",
-        f"https://{DOMAIN}",
-    ]
+        "http://192.168.1.6",
+        "https://192.168.1.6",
+        "http://localhost:3000",
+        "https://localhost:3000",]
+#        f"http://{DOMAIN}",
+#        f"https://{DOMAIN}",
+#    ]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,

@@ -1,11 +1,11 @@
 [Unit]
-Description=My Script Service
+Description=Wasatch Photonics spectrometer Raspberry Pi gateway
 After=multi-user.target
 
 [Service]
 Type=simple
 User=root
-ExecStart=/usr/bin/python3 /home/pi/##########FILL WITH CORRECT PATH#######/RPi-Communication/gatewayController.py
+ExecStart=/usr/bin/python3 /home/pi/##########FILL WITH CORRECT PATH#######/RPi-Communication/apiController.py
 WorkingDirectory=/home/pi/#############FILL WITH CORREC PATH###############/RPi-Communication/
 
 [Install]
