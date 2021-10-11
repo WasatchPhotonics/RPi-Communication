@@ -60,6 +60,7 @@ If this does not resolve the issue, the best method is to turn off the pi. Disco
 
 # Future possible features
 - multiple spectrometer support
+- improve web dashboard code by integrating redux
 - additional commands
 
 # Invocation
