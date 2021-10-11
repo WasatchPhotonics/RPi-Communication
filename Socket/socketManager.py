@@ -1,6 +1,7 @@
 import json
 import time
 import socket
+import base64
 import logging
 import threading
 import netifaces as ni
@@ -92,6 +93,10 @@ class Socket_Manager:
                     response = res["Res_Value"]
                     response_error = res["Error"]
                     response = {"ID": msg_id, "Value": response, "Error": response_error}
+                    if command == "EEPROM":
+                        for i, entry in enumerate(response["Value"]):
+                            int_vals = [x for x in response["Value"][i]]
+                            response["Value"][i] = int_vals
                     response = json.dumps(response)
                     byte_response = bytes(response,encoding='utf-8')
                     response_len = len(byte_response)

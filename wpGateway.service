@@ -1,5 +1,5 @@
 [Unit]
-Description=My Script Service
+Description=Wasatch Photonics spectrometer Raspberry Pi gateway
 After=multi-user.target
 
 [Service]

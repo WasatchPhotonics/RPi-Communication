@@ -5,6 +5,8 @@ This repository is the program that allows a raspberry pi connected to a spectro
   - Wi-Fi
   - Ethernet
 
+as well as an optional web page interface.
+
 pybleno determines the name advertised that shows up in the app, but to change the name of the device read by ble communication the pi needs a new file called [/etc/machine-info](https://stackoverflow.com/questions/26299053/changing-raspberry-pi-bluetooth-device-name)
 
 pybleno determines the MTU based on what the central device requests. This means the device that connects to the pi must request an MTU of at least 256 or else reading spectra will not work.
@@ -16,8 +18,15 @@ In the Socket folder, exampleClient.py and exampleClientGUI.py provide a CLI and
 - [Wasatch.PY](https://github.com/WasatchPhotonics/Wasatch.PY) for spectrometer interface
 - [pybleno](https://github.com/Adam-Langley/pybleno) for BLE interface
 - [bleno](https://github.com/noble/bleno)
+- [netifaces](https://github.com/al45tair/netifaces)
 
 Follow the [bleno prerequisites](https://github.com/noble/bleno#prerequisites) to setup the raspberry pi initially. 
+
+## Web Page Dependencies
+- [Node.js](https://nodejs.org/en/)
+- [Fast API](https://fastapi.tiangolo.com/)
+- [dotenv](https://github.com/theskumar/python-dotenv)
+- [Uvicorn](https://www.uvicorn.org/)
 
 # Methodology
 
@@ -26,6 +35,8 @@ The application starts in the gatewayController.py file. This sets up the logger
 # Spectrometer Errors
 
 If the spectrometer is disconnected or needs to be hot-plugged, it will reconnect after a few queries. If you have an error, unplug then plug the spectrometer back in. Send a few requests to the Pi. The spectrometer should be reconnected and functional after approximately 3 queries and you can resume your operation.
+
+If this does not resolve the issue, the best method is to turn off the pi. Disconnect the spectrometer and then reconnect it. Turn the pi back on, and it should function correctly now.
 
 # Supported Commands
 
@@ -50,12 +61,15 @@ If the spectrometer is disconnected or needs to be hot-plugged, it will reconnec
 # Future possible features
 - multiple spectrometer support
 - additional commands
-- http web page view
 
 # Invocation
 
-Run the BLE service:
+Run the service:
 
+### Non-Web Page
     $ sudo python3 -u gatewayController.py
+    
+### Web Page    
+    $ sudo python3 -u apiController.py
 
 (Sudo required because pybleno [uses raw sockets](https://github.com/Adam-Langley/pybleno/issues/12#issuecomment-386927390)).
