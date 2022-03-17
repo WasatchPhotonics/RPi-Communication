@@ -318,13 +318,25 @@ class Laser_State(Characteristic):
         msg_id = self.guid + str(self.msg_num)
         msg = {"Command": "GET_RAMAN_MODE", "Value": None}
         raman_mode = self.msg_func(msg_id, msg, 2)["Res_Value"]
+        if raman_mode == None:
+            logger.error("Got a none value for raman_mode, returning 0")
+            raman_mode = 0
         laser_type = 0
         msg = {"Command": "GET_LASER_STATE", "Value": None}
         laser_enable = self.msg_func(msg_id, msg, 2)["Res_Value"]
+        if laser_enable == None:
+            logger.error("Got a none value for laser_enable, returning 0")
+            laser_enable = 0
         msg = {"Command": "GET_WATCHDOG_DELAY", "Value": None}
         laser_watchdog = self.msg_func(msg_id, msg, 2)["Res_Value"]
+        if laser_watchdog == None:
+            logger.error("Got a none value for laser_watchdog, returning 0")
+            laser_watchdog = 0
         msg = {"Command": "GET_RAMAN_DELAY", "Value": None}
         laser_delay = self.msg_func(msg_id, msg, 2)["Res_Value"] 
+        if laser_delay == None:
+            logger.error("Got a none value for laser_delay, returning 0")
+            laser_delay = 0
 
         return_bytes = raman_mode.to_bytes(2, "big") + laser_type.to_bytes(2, "big") + laser_enable.to_bytes(2, "big")
         return_bytes += laser_watchdog.to_bytes(2, "big") + laser_delay.to_bytes(2, "big")
