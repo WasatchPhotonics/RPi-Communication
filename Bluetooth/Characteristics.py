@@ -265,7 +265,7 @@ class Gain(Characteristic):
         self.msg_num = 0
 
     def onReadRequest(self, offset, callback):
-        msg_id = self.guid + str(msg_num)
+        msg_id = self.guid + str(self.msg_num)
         msg = {"Command": "GET_GAIN", "Value": None}
         gain = self.msg_func(msg_id, msg, 5)["Res_Value"]
         self.msg_num += 1
