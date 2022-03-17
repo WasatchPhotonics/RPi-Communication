@@ -270,6 +270,7 @@ class Gain(Characteristic):
         gain = self.msg_func(msg_id, msg, 5)["Res_Value"]
         self.msg_num += 1
         self.msg_num %= 8000
+        gain = int(gain)
         logger.debug("Bluetooth: Received device response for gain of {gain}")
         callback(Characteristic.RESULT_SUCCESS, gain.to_bytes(2, "big"))
 
