@@ -324,7 +324,7 @@ class Laser_State(Characteristic):
         msg = {"Command": "GET_WATCHDOG_DELAY", "Value": None}
         laser_watchdog = self.msg_func(msg_id, msg, 2)["Res_Value"]
         msg = {"Command": "GET_RAMAN_DELAY", "Value": None}
-        laser_delay = self.msg_fun(msg_id, msg, 2)["Res_Value"] 
+        laser_delay = self.msg_func(msg_id, msg, 2)["Res_Value"] 
 
         return_bytes = raman_mode.to_bytes(2, "big") + laser_type.to_bytes(2, "big") + laser_enable.to_bytes(2, "big")
         return_bytes += laser_watchdog.to_bytes(2, "big") + laser_delay.to_bytes(2, "big")
