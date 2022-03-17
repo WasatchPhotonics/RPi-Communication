@@ -201,7 +201,7 @@ class Scans_to_average(Characteristic):
         self.device = device
         
     def onReadRequest(self, offset, callback):
-        logger.debug()
+        logger.debug("Scans to average read called")
         callback(Characteristic.RESULT_SUCCESS, self._value)
     
     def onWriteRequest(self, data, offset, withoutResponse, callback):
