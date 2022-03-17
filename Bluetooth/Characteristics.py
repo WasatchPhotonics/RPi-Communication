@@ -167,7 +167,7 @@ class IntegrationTime(Characteristic):
         #logger.debug(offset, callback, self._value)
         msg_id = self.guid + str(self.msg_num)
         msg = {"Command": "GET_INT_TIME", "Value": None}
-        self._value = self.msg_func(msg_id, msg ,5)
+        self._value = self.msg_func(msg_id, msg ,5)["Res_Value"]
         self.msg_num += 1
         self.msg_num %= 8000
         logger.debug(f"Bluetooth: Got integration time of {self._value}")
