@@ -314,7 +314,7 @@ class Laser_State(Characteristic):
         logger.warn("Bluetooth: Received an incorrect byte that triggered a laser shut off.")
 
     def onReadRequest(self, offset, callback):
-        log.debug("Bluetooth: Received laser read request.")
+        loggger.debug("Bluetooth: Received laser read request.")
         msg_id = self.guid + str(self.msg_num)
         msg = {"Command": "GET_RAMAN_MODE", "Value": None}
         raman_mode = self.msg_func(msg_id, msg, 2)["Res_Value"]
