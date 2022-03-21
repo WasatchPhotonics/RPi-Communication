@@ -237,11 +237,12 @@ class Read_Spectrum(Characteristic):
         reading = spec_read
         logger.debug(f"Creating return bytes from reading. Starting at pixel {pixel_offset}.")
         return_bytes = bytes()
-        while len(return_bytes) < 180 and pixel_offset < len(reading):
-            pixel_byte_value = int(reading[pixel_offset]).to_bytes(2,"little")
-            return_bytes += pixel_byte_value
-            pixel_offset += 1
-        return_bytes = pixel_offset.to_bytes(2,"big") + return_bytes
+        if reading is not None:
+            while len(return_bytes) < 180 and pixel_offset < len(reading):
+                pixel_byte_value = int(reading[pixel_offset]).to_bytes(2,"little")
+                return_bytes += pixel_byte_value
+                pixel_offset += 1
+            return_bytes = pixel_offset.to_bytes(2,"big") + return_bytes
         logger.debug(f"Finished building return bytes of length {len(return_bytes)} containing up to pixel {pixel_offset}.")
         callback(Characteristic.RESULT_SUCCESS, return_bytes)
 
