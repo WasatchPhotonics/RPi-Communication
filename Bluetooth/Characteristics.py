@@ -243,6 +243,8 @@ class Read_Spectrum(Characteristic):
                 return_bytes += pixel_byte_value
                 pixel_offset += 1
             return_bytes = pixel_offset.to_bytes(2,"big") + return_bytes
+        else:
+            logger.error(f"Reading was None, so returning null bytes value")
         logger.debug(f"Finished building return bytes of length {len(return_bytes)} containing up to pixel {pixel_offset}.")
         callback(Characteristic.RESULT_SUCCESS, return_bytes)
 
