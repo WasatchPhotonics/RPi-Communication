@@ -68,7 +68,9 @@ class Acquire_Spectrum(Characteristic):
         logger.debug("Bluetooth: Received command to acquire spectrum. Acquiring spectrum...")
         msg_id = self.guid + str(self.msg_num)
         msg = {"Command": "GET_SPECTRA", "Value": None}
-        self.current_spec = self.msg_func(msg_id, msg, 5)["Res_Value"]
+        res = self.msg_func(msg_id, msg, 5)["Res_Value"]
+        if res is not None:
+            self.current_spec = res 
         self.msg_num += 1
         self.msg_num %= 8000
         callback(Characteristic.RESULT_SUCCESS)
@@ -244,6 +246,7 @@ class Read_Spectrum(Characteristic):
                 pixel_offset += 1
             return_bytes = pixel_offset.to_bytes(2,"big") + return_bytes
         else:
+            return_bytes = pixel_offset.to_bytes(2,"big") + return_bytes
             logger.error(f"Reading was None, so returning null bytes value")
         logger.debug(f"Finished building return bytes of length {len(return_bytes)} containing up to pixel {pixel_offset}.")
         callback(Characteristic.RESULT_SUCCESS, return_bytes)
