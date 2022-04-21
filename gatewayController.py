@@ -16,7 +16,7 @@ from mainBluetooth import *
 from deviceManager import *
 from socketManager import *
 
-VERSION_NUM = '1.0.5'
+VERSION_NUM = '1.0.6'
 logger = logging.getLogger()
 
 
